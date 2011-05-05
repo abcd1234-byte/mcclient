@@ -5,6 +5,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from ctypes import c_float
 from struct import pack
+from math import cos, sin, radians
 
 
 from time import time
@@ -52,6 +53,8 @@ if __name__ == '__main__':
     glLoadIdentity()
     gluPerspective(60, 800./600., 0.1, 128)
 
+    pygame.event.set_grab(True)
+    pygame.mouse.set_visible(False)
 
     truc = loadImage('mcdata/terrain.png')
 
@@ -67,11 +70,12 @@ if __name__ == '__main__':
 
     vertex = []
     texcoords = []
-    x = None
 
     clock = pygame.time.Clock()
 
-    while con.socket:
+    quit = False
+
+    while con.socket and not quit:
         for message in con.get_messages():
             if type(message) == messages.ChatMessage:
                 print('[MSG] %s' % message.message)
@@ -99,23 +103,37 @@ if __name__ == '__main__':
                 print('[PlayerPosLook] %d, %d (%d), %d ; %f, %f'
                         % (message.x, message.y, message.stance, message.z,
                            message.yaw, message.pitch))
-                x, y, z = message.x, message.stance, message.z
                 message_pos = message
                 message.send(con.socket)
 
             if type(message) == messages.UpdateHealth:
                 print('[Vie] %d / 20' % message.health)
 
-        if message_pos:
-            message_pos.yaw = (10. * time()) % 360
-            message_pos.pitch = 2
 
+        # Pygame events
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEMOTION:
+                if message_pos:
+                    message_pos.yaw += event.rel[0] / 2.
+                    message_pos.pitch += event.rel[1] / 3.
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    quit = True
+        # Keyboard
+        key_pressed = pygame.key.get_pressed()
+        # TODO: Move accordingly
+        if key_pressed[pygame.K_z]:
+            message_pos.z += cos(radians(message_pos.yaw)) * .2
+            message_pos.x -= sin(radians(message_pos.yaw)) * .2
+
+
+        if message_pos:
             message_pos.send(con.socket)
         else:
             messages.KeepAlive().send(con.socket)
 
-        if x and world.needs_updating(x, y, z):
-            vertex, texcoords = world.get_gl_faces(x, y, z)
+        if message_pos and world.needs_updating(message_pos.x, message_pos.stance, message_pos.z):
+            vertex, texcoords = world.get_gl_faces(message_pos.x, message_pos.stance, message_pos.z)
             # Hack to speed up things, PyOpenGL sux
             oldtime = time()
             floats = pack('f' * (3 * len(vertex)), *(coord for point in vertex for coord in point))
@@ -125,18 +143,22 @@ if __name__ == '__main__':
             print('Time ellapsed: %f' % (time() - oldtime))
             print('Nb vertex drawn: %d' % (len(vertex)))
 
-        if x:
+        if message_pos:
             glClearColor(0.0, 0.0, 1.0, 0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+            #TODO: new pipeline
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             glRotated(message_pos.pitch, 1, 0, 0)
             glRotated(180 + message_pos.yaw, 0, 1, 0)
-            glTranslated(-x, -y, -z)
+            glTranslated(-message_pos.x, -message_pos.stance, -message_pos.z)
 
             glDrawArrays(GL_QUADS, 0, len(vertex))
 
         pygame.display.flip()
         clock.tick(50)
+
+    if quit:
+        messages.Disconnect().send(con.socket)
 
