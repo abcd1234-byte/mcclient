@@ -12,6 +12,7 @@ class Sector(object):
         self.blocks = [[[0] * 128 for y in xrange(16)] for x in xrange(16)]
         self.metadatas = [[[0] * 128 for y in xrange(16)] for x in xrange(16)]
         self.faces = []
+        self.alpha_faces = []
         self.fully_loaded = False
         self.changed = False #TODO
 
@@ -60,11 +61,12 @@ class Sector(object):
         zb = self.cz * 16
 
         self.faces = []
+        self.alpha_faces = []
         for x, blocks in enumerate(self.blocks):
             for z, blocks in enumerate(blocks):
                 for y, block in enumerate(blocks):
                     pos = x + xb, y, z + zb
-                    if block != 0:
+                    if block != 0 and not Block.from_type(block).transparent:
                         if x == 15 or not self.blocks[x + 1][z][y] or Block.from_type(self.blocks[x + 1][z][y]).transparent:
                             self.faces.append((pos, FaceDirections.SOUTH))
                         if y == 127 or not self.blocks[x][z][y + 1] or Block.from_type(self.blocks[x][z][y + 1]).transparent:
@@ -77,13 +79,26 @@ class Sector(object):
                             self.faces.append((pos, FaceDirections.BOTTOM))
                         if z == 0 or not self.blocks[x][z-1][y] or Block.from_type(self.blocks[x][z - 1][y]).transparent:
                             self.faces.append((pos, FaceDirections.EAST))
+                    elif block != 0 and Block.from_type(block).transparent:
+                        if x == 15 or not self.blocks[x + 1][z][y] or Block.from_type(self.blocks[x + 1][z][y]).transparent:
+                            self.alpha_faces.append((pos, FaceDirections.SOUTH))
+                        if y == 127 or not self.blocks[x][z][y + 1] or Block.from_type(self.blocks[x][z][y + 1]).transparent:
+                            self.alpha_faces.append((pos, FaceDirections.TOP))
+                        if z == 15 or not self.blocks[x][z + 1][y] or Block.from_type(self.blocks[x][z + 1][y]).transparent:
+                            self.alpha_faces.append((pos, FaceDirections.WEST))
+                        if x == 0 or not self.blocks[x-1][z][y] or Block.from_type(self.blocks[x - 1][z][y]).transparent:
+                            self.alpha_faces.append((pos, FaceDirections.NORTH))
+                        if y == 0 or not self.blocks[x][z][y-1] or Block.from_type(self.blocks[x][z][y - 1]).transparent:
+                            self.alpha_faces.append((pos, FaceDirections.BOTTOM))
+                        if z == 0 or not self.blocks[x][z-1][y] or Block.from_type(self.blocks[x][z - 1][y]).transparent:
+                            self.alpha_faces.append((pos, FaceDirections.EAST))
 
 
     def get_faces(self):
         if self.changed:
             self.changed = False
             self._gen_faces()
-        return self.faces
+        return self.faces, self.alpha_faces
 
 
 
@@ -131,10 +146,17 @@ class World(object):
 
     def regen_faces(self, size):
         self.faces = []
+        alpha_faces = []
         print('Regen world faces')
         for (cx, cz), sector in self.sectors.iteritems():
             if abs(cx - self.central_sector[0]) <= size and abs(cz - self.central_sector[1]) <= size:
-                self.faces.extend(sector.get_faces())
+                opaque, alpha = sector.get_faces()
+                self.faces.extend(opaque)
+                alpha_faces.extend(alpha)
+
+        #TODO: sort alpha faces
+        self.faces.extend(alpha_faces)
+
         self.changed = False
         print('Regen ended.')
 
