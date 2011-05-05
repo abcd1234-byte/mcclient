@@ -176,6 +176,8 @@ class Bed(Block):
                 return (7, 8, orientation)
             elif FaceOrientations.faces[orientation] == face: #TODO
                 return (8, 9, FaceOrientations.NORTH) #TODO
+            elif FaceOrientations.faces[(orientation + 2) % 4] == face:
+                return (4, 11, FaceOrientations.NORTH)
             else:
                 return (7, 9, FaceOrientations.NORTH) #TODO
         else:
@@ -184,6 +186,8 @@ class Bed(Block):
                 return (6, 8, orientation)
             elif FaceOrientations.faces[(orientation + 2) % 4] == face: #TODO
                 return (5, 9, FaceOrientations.NORTH) #TODO
+            elif FaceOrientations.faces[orientation] == face:
+                return (4, 11, FaceOrientations.NORTH)
             else:
                 return (6, 9, FaceOrientations.NORTH) #TODO
 
