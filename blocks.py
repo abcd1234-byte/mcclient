@@ -91,6 +91,26 @@ class WoodenPlank(Block):
         return (4, 0, FaceOrientations.NORTH)
 
 
+class Water(Block):
+    id = 8 #TODO
+    transparent = True
+
+    @classmethod
+    def get_face_texture(cls, metadata, face):
+        return (13, 12, FaceOrientations.NORTH) #TODO
+
+
+
+class StationaryWater(Block):
+    id = 9 #TODO
+    transparent = True
+
+    @classmethod
+    def get_face_texture(cls, metadata, face):
+        return (13, 12, FaceOrientations.NORTH)
+
+
+
 class Gravel(Block):
     id = 13
 
@@ -129,6 +149,17 @@ class Wood(Block):
                 return (4, 7, FaceOrientations.NORTH)
             else:
                 return (5, 7, FaceOrientations.NORTH)
+
+
+
+class Glass(Block):
+    id = 20
+    transparent = True
+
+    @classmethod
+    def get_face_texture(cls, metadata, face):
+        return (1, 3, FaceOrientations.NORTH)
+
 
 
 class Bed(Block):
@@ -221,9 +252,23 @@ class WoodenDoor(Block):
 
     @classmethod
     def get_face_texture(cls, metadata, face):
-        half = metadata & 0x8
-        open = metadata & 0x4
+        half = (metadata & 0x8) >> 3
+        open = (metadata & 0x4) >> 2
         corner = metadata & 3
 
+        if FaceOrientations.faces[(FaceOrientations.NORTH + corner + open) % 4] == face:
+            return (1, 6 - half, FaceOrientations.NORTH)
         #TODO: transparent:
         return (4, 11, FaceOrientations.NORTH)
+
+
+
+class SugarCane(Block):
+    id = 83
+
+    transparent = True
+
+    @classmethod
+    def get_face_texture(cls, metadata, face):
+        return (9, 4, FaceOrientations.NORTH)
+
