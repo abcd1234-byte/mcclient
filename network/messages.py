@@ -516,6 +516,20 @@ class NewInvalidState(object):
         return cls(*struct.unpack('!B', socket.recv(1)))
 
 
+@register
+class Weather(object):
+    id = 0x47 #TODO
+
+    def __init__(self, eid, unkwn1, unkwn2, unkwn3, unkwn4):
+        self.eid = eid
+        self.unkwn1, self.unkwn2, self.unkwn3, self.unkwn4 = unkwn1, unkwn2, unkwn3, unkwn4
+
+
+    @classmethod
+    def get(cls, socket):
+        return cls(*struct.unpack('!I?iii', socket.recv(17)))
+
+
 
 @register
 class SetSlot(object):
@@ -607,13 +621,15 @@ class IncrementStatistic(object):
 class Disconnect(object):
     id = 0xff
 
-    def __init__(self):
-        pass
+    def __init__(self, reason='byebye'):
+        self.reason = reason
 
 
     @classmethod
     def get(cls, socket):
-        return cls()
+        return cls(read_string(socket))
 
     def send(self, socket):
         socket.send(struct.pack('!B', self.id))
+        write_string(socket, self.reason)
+
