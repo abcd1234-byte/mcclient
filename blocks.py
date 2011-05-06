@@ -23,7 +23,7 @@ class FaceOrientations:
 
 
 
-_block_types = {}
+_block_types = {0: None}
 class BlockMeta(type):
     def __new__(mcs, name, bases, classdict):
         cls = type.__new__(mcs, name, bases, classdict)

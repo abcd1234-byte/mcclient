@@ -20,7 +20,7 @@ class Sector(object):
 
     def set_block(self, x, y, z, type, metadata=None, blocklight=None, skylight=None):
         #TODO
-        self.blocks[x][z][y] = type #TODO
+        self.blocks[x][z][y] = Block.from_type(type)
         if metadata is not None:
             self.metadatas[x][z][y] = metadata
         #TODO: optimize
@@ -43,13 +43,17 @@ class Sector(object):
         #TODO: optimize
         if size_x == 16 and size_y == 128 and size_z == 16:
             self.fully_loaded = True #TODO
+
+        size = size_x * size_y * size_z
+        size_3_2 = size * 3 // 2
+
         for x in xrange(size_x):
             for y in xrange(size_y):
                 for z in xrange(size_z):
                     index = y + (z * size_y) + (x * size_y * size_z)
-                    self.blocks[ox + x][oz + z][oy + y] = ord(data[index])
-                    metadata = ord(data[size_x * size_y * size_z + (index // 2)])
-                    lighting = ord(data[size_x * size_y * size_z * 3 // 2 + (index // 2)])
+                    self.blocks[ox + x][oz + z][oy + y] = Block.from_type(ord(data[index]))
+                    metadata = ord(data[size + (index // 2)])
+                    lighting = ord(data[size_3_2 + (index // 2)])
                     if index % 2 == 1:
                         self.lighting[ox + x][oz + z][oy + y] = lighting >> 4
                         self.metadatas[ox + x][oz + z][oy + y] = metadata >> 4
@@ -76,31 +80,31 @@ class Sector(object):
             for z, blocks in enumerate(blocks):
                 for y, block in enumerate(blocks):
                     pos = x + xb, y, z + zb
-                    if block != 0 and not Block.from_type(block).transparent:
-                        if x == 15 or not self.blocks[x + 1][z][y] or Block.from_type(self.blocks[x + 1][z][y]).transparent:
+                    if block is not None and not block.transparent:
+                        if x == 15 or not self.blocks[x + 1][z][y] or self.blocks[x + 1][z][y].transparent:
                             self.faces.append((pos, FaceDirections.SOUTH))
-                        if y == 127 or not self.blocks[x][z][y + 1] or Block.from_type(self.blocks[x][z][y + 1]).transparent:
+                        if y == 127 or not self.blocks[x][z][y + 1] or self.blocks[x][z][y + 1].transparent:
                             self.faces.append((pos, FaceDirections.TOP))
-                        if z == 15 or not self.blocks[x][z + 1][y] or Block.from_type(self.blocks[x][z + 1][y]).transparent:
+                        if z == 15 or not self.blocks[x][z + 1][y] or self.blocks[x][z + 1][y].transparent:
                             self.faces.append((pos, FaceDirections.WEST))
-                        if x == 0 or not self.blocks[x-1][z][y] or Block.from_type(self.blocks[x - 1][z][y]).transparent:
+                        if x == 0 or not self.blocks[x-1][z][y] or self.blocks[x - 1][z][y].transparent:
                             self.faces.append((pos, FaceDirections.NORTH))
-                        if y == 0 or not self.blocks[x][z][y-1] or Block.from_type(self.blocks[x][z][y - 1]).transparent:
+                        if y == 0 or not self.blocks[x][z][y-1] or self.blocks[x][z][y - 1].transparent:
                             self.faces.append((pos, FaceDirections.BOTTOM))
-                        if z == 0 or not self.blocks[x][z-1][y] or Block.from_type(self.blocks[x][z - 1][y]).transparent:
+                        if z == 0 or not self.blocks[x][z-1][y] or self.blocks[x][z - 1][y].transparent:
                             self.faces.append((pos, FaceDirections.EAST))
-                    elif block != 0 and Block.from_type(block).transparent:
-                        if x == 15 or not self.blocks[x + 1][z][y] or Block.from_type(self.blocks[x + 1][z][y]).transparent:
+                    elif block is not None and block.transparent:
+                        if x == 15 or not self.blocks[x + 1][z][y] or self.blocks[x + 1][z][y].transparent:
                             self.alpha_faces.append((pos, FaceDirections.SOUTH))
-                        if y == 127 or not self.blocks[x][z][y + 1] or Block.from_type(self.blocks[x][z][y + 1]).transparent:
+                        if y == 127 or not self.blocks[x][z][y + 1] or self.blocks[x][z][y + 1].transparent:
                             self.alpha_faces.append((pos, FaceDirections.TOP))
-                        if z == 15 or not self.blocks[x][z + 1][y] or Block.from_type(self.blocks[x][z + 1][y]).transparent:
+                        if z == 15 or not self.blocks[x][z + 1][y] or self.blocks[x][z + 1][y].transparent:
                             self.alpha_faces.append((pos, FaceDirections.WEST))
-                        if x == 0 or not self.blocks[x-1][z][y] or Block.from_type(self.blocks[x - 1][z][y]).transparent:
+                        if x == 0 or not self.blocks[x-1][z][y] or self.blocks[x - 1][z][y].transparent:
                             self.alpha_faces.append((pos, FaceDirections.NORTH))
-                        if y == 0 or not self.blocks[x][z][y-1] or Block.from_type(self.blocks[x][z][y - 1]).transparent:
+                        if y == 0 or not self.blocks[x][z][y-1] or self.blocks[x][z][y - 1].transparent:
                             self.alpha_faces.append((pos, FaceDirections.BOTTOM))
-                        if z == 0 or not self.blocks[x][z-1][y] or Block.from_type(self.blocks[x][z - 1][y]).transparent:
+                        if z == 0 or not self.blocks[x][z-1][y] or self.blocks[x][z - 1][y].transparent:
                             self.alpha_faces.append((pos, FaceDirections.EAST))
 
 
@@ -182,7 +186,6 @@ class World(object):
         vertex = []
         texcoords = []
         colors = []
-        types = set()
         for (x, y, z), face in self.faces:
             nx, ny, nz = FaceDirections.directions[face]
             if abs(x - obs_x) > 20 or abs(y - obs_y) > 20 or abs(z - obs_z) > 20:
@@ -195,9 +198,8 @@ class World(object):
             cx, cz, ox, oy, oz = self.get_block_coords(x, y, z)
             cx2, cz2, ox2, oy2, oz2 = self.get_block_coords(x + nx, y + ny, z + nz)
             type = self.sectors[cx, cz].get_block_type(ox, oy, oz)
-            lighting = self.sectors[cx2, cz2].get_block_lighting(ox2, oy2, oz2)
-            types.add(type)
-            u, v, orientation = Block.from_type(type).get_face_texture(self.sectors[cx, cz].get_block_data(ox, oy, oz), face)
+            lighting = self.sectors[cx2, cz2].get_block_lighting(ox2, oy2, oz2) #TODO: optimize
+            u, v, orientation = type.get_face_texture(self.sectors[cx, cz].get_block_data(ox, oy, oz), face)
             u, v = u / 16., 15. / 16. - v / 16.
 
             maps = FaceOrientations.uvmaps[orientation]
@@ -238,6 +240,5 @@ class World(object):
                                (x,     y + 1, z),
                                (x + 1, y + 1, z),
                                (x + 1, y,     z)])
-        print('Encountered types: %r' % types)
         return vertex, texcoords, colors
 
