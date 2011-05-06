@@ -11,6 +11,7 @@ class Sector(object):
         self.cx, self.cz = cx, cz
         self.blocks = [[[0] * 128 for y in xrange(16)] for x in xrange(16)]
         self.metadatas = [[[0] * 128 for y in xrange(16)] for x in xrange(16)]
+        self.lighting = [[[0] * 128 for y in xrange(16)] for x in xrange(16)]
         self.faces = []
         self.alpha_faces = []
         self.fully_loaded = False
@@ -34,19 +35,26 @@ class Sector(object):
         return self.metadatas[x][z][y]
 
 
+    def get_block_lighting(self, x, y, z):
+        return self.lighting[x][z][y]
+
+
     def set_chunk(self, ox, oy, oz, size_x, size_y, size_z, data):
+        #TODO: optimize
         if size_x == 16 and size_y == 128 and size_z == 16:
             self.fully_loaded = True #TODO
         for x in xrange(size_x):
             for y in xrange(size_y):
                 for z in xrange(size_z):
                     index = y + (z * size_y) + (x * size_y * size_z)
-                    type, = struct.unpack('!B', data[index])
-                    self.blocks[ox + x][oz + z][oy + y] = type #TODO
-                    metadata, = struct.unpack('!B', data[size_x * size_y * size_z + (index // 2)])
+                    self.blocks[ox + x][oz + z][oy + y] = ord(data[index])
+                    metadata = ord(data[size_x * size_y * size_z + (index // 2)])
+                    lighting = ord(data[size_x * size_y * size_z * 3 // 2 + (index // 2)])
                     if index % 2 == 1:
+                        self.lighting[ox + x][oz + z][oy + y] = lighting >> 4
                         self.metadatas[ox + x][oz + z][oy + y] = metadata >> 4
                     else:
+                        self.lighting[ox + x][oz + z][oy + y] = lighting & 15
                         self.metadatas[ox + x][oz + z][oy + y] = metadata & 15
         self.changed = True #TODO
 
@@ -59,6 +67,8 @@ class Sector(object):
 
         xb = self.cx * 16
         zb = self.cz * 16
+
+        #TODO: optimize and cleanup
 
         self.faces = []
         self.alpha_faces = []
@@ -171,24 +181,31 @@ class World(object):
 
         vertex = []
         texcoords = []
+        colors = []
         types = set()
         for (x, y, z), face in self.faces:
             nx, ny, nz = FaceDirections.directions[face]
-            if (x - obs_x) ** 2 + (y - obs_y) ** 2 + (z - obs_z) ** 2 > 400:
+            if abs(x - obs_x) > 20 or abs(y - obs_y) > 20 or abs(z - obs_z) > 20:
                 continue
 
             #TODO: backface culling
-            if nx * (x - obs_x) + ny * (y - obs_y) + nz * (z - obs_z) >= 0:
-                continue
+            #if nx * (x - obs_x) + ny * (y - obs_y) + nz * (z - obs_z) >= 0:
+            #    continue
 
             cx, cz, ox, oy, oz = self.get_block_coords(x, y, z)
+            cx2, cz2, ox2, oy2, oz2 = self.get_block_coords(x + nx, y + ny, z + nz)
             type = self.sectors[cx, cz].get_block_type(ox, oy, oz)
+            lighting = self.sectors[cx2, cz2].get_block_lighting(ox2, oy2, oz2)
             types.add(type)
             u, v, orientation = Block.from_type(type).get_face_texture(self.sectors[cx, cz].get_block_data(ox, oy, oz), face)
             u, v = u / 16., 15. / 16. - v / 16.
 
             maps = FaceOrientations.uvmaps[orientation]
             texcoords.extend((u2 / 16. + u, v2 / 16. + v) for u2, v2 in maps)
+
+            colors.extend([(0.8 ** (15 - lighting),
+                            0.8 ** (15 - lighting),
+                            0.8 ** (15 - lighting))] * 4)
 
             #TODO: simplifier
             if nx == 1:
@@ -222,5 +239,5 @@ class World(object):
                                (x + 1, y + 1, z),
                                (x + 1, y,     z)])
         print('Encountered types: %r' % types)
-        return vertex, texcoords
+        return vertex, texcoords, colors
 

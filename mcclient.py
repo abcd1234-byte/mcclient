@@ -49,12 +49,13 @@ if __name__ == '__main__':
     glDisable(GL_LIGHTING)
     glEnableClientState(GL_VERTEX_ARRAY)
     glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+    glEnableClientState(GL_COLOR_ARRAY)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(60, 800./600., 0.1, 128)
 
-    pygame.event.set_grab(True)
-    pygame.mouse.set_visible(False)
+#    pygame.event.set_grab(True)
+#    pygame.mouse.set_visible(False)
 
     truc = loadImage('mcdata/terrain.png')
 
@@ -109,6 +110,10 @@ if __name__ == '__main__':
             if type(message) == messages.UpdateHealth:
                 print('[Vie] %d / 20' % message.health)
 
+            if type(message) == messages.Disconnect:
+                print('[Kicked] %s' % message.reason)
+                quit = True
+
 
         # Pygame events
         for event in pygame.event.get():
@@ -133,13 +138,15 @@ if __name__ == '__main__':
             messages.KeepAlive().send(con.socket)
 
         if message_pos and world.needs_updating(message_pos.x, message_pos.stance, message_pos.z):
-            vertex, texcoords = world.get_gl_faces(message_pos.x, message_pos.stance, message_pos.z)
+            vertex, texcoords, colors = world.get_gl_faces(message_pos.x, message_pos.stance, message_pos.z)
             # Hack to speed up things, PyOpenGL sux
             oldtime = time()
             floats = pack('f' * (3 * len(vertex)), *(coord for point in vertex for coord in point))
             floats2 = pack('f' * (2 * len(vertex)), *(coord for point in texcoords for coord in point))
+            floats3 = pack('f' * (3 * len(vertex)), *(c for color in colors for c in color))
             glVertexPointer(3, GL_FLOAT, 0, floats)
             glTexCoordPointer(2, GL_FLOAT, 0, floats2)
+            glColorPointer(3, GL_FLOAT, 0, floats3)
             print('Time ellapsed: %f' % (time() - oldtime))
             print('Nb vertex drawn: %d' % (len(vertex)))
 
