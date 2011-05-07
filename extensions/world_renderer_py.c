@@ -28,6 +28,8 @@ static PyObject *WorldRenderer_new(PyTypeObject *type, PyObject *args, PyObject 
         self->world_renderer = world_renderer_new();
         Py_INCREF(Py_None);
         self->world_renderer->sectors_dict = Py_None;
+        Py_INCREF(Py_None);
+        self->world_renderer->get_block_texture = Py_None;
     }
 
     return (PyObject *) self;
@@ -36,14 +38,19 @@ static PyObject *WorldRenderer_new(PyTypeObject *type, PyObject *args, PyObject 
 
 static int WorldRenderer_init(WorldRenderer *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *sectors_dict = NULL, *tmp = NULL;
+    PyObject *sectors_dict = NULL, *get_block_texture, *tmp = NULL;
 
-    if (!PyArg_ParseTuple(args, "O", &sectors_dict))
+    if (!PyArg_ParseTuple(args, "OO", &sectors_dict, &get_block_texture))
         return -1;
 
     tmp = self->world_renderer->sectors_dict;
     Py_INCREF(sectors_dict);
     self->world_renderer->sectors_dict = sectors_dict;
+    Py_XDECREF(tmp);
+
+    tmp = self->world_renderer->get_block_texture;
+    Py_INCREF(get_block_texture);
+    self->world_renderer->get_block_texture = get_block_texture;
     Py_XDECREF(tmp);
 
     return 0;
@@ -112,6 +119,13 @@ static PyObject *WorldRenderer_get_colors(WorldRenderer *self, void *closure)
 }
 
 
+static PyObject *WorldRenderer_get_texcoords(WorldRenderer *self, void *closure)
+{
+    return PyBytes_FromStringAndSize((const char *) self->world_renderer->texcoords,
+                                      sizeof(struct uv) * self->world_renderer->nb_vertices);
+}
+
+
 static PyObject *WorldRenderer_get_nb_vertices(WorldRenderer *self, void *closure)
 {
     return PyInt_FromLong(self->world_renderer->nb_vertices);
@@ -129,6 +143,10 @@ static PyGetSetDef WorldRenderer_getseters[] = {
      NULL},
     {"colors", 
      (getter)WorldRenderer_get_colors, NULL,
+     "Number of vertices to dispaly",
+     NULL},
+    {"texcoords", 
+     (getter)WorldRenderer_get_texcoords, NULL,
      "Number of vertices to dispaly",
      NULL},
     {NULL}  /* Sentinel */

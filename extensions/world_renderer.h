@@ -28,7 +28,7 @@ struct ViewContext {
 };
 
 struct WorldRenderer {
-    PyObject *sectors_dict;
+    PyObject *sectors_dict, *get_block_texture;
     unsigned int nb_vertices;
     struct vertex vertices[MAX_VERTICES];
     struct color colors[MAX_VERTICES];

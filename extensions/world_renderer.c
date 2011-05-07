@@ -33,14 +33,37 @@ inline static bool _is_cube_visible(struct ViewContext *view_context,
 }
 
 
+void world_renderer_get_texture(struct WorldRenderer *world_renderer,
+                                unsigned char blocktype,
+                                unsigned char blockdata,
+                                unsigned char face,
+                                unsigned char *uv,
+                                unsigned char *orientation)
+{
+    PyObject *arglist = NULL, *result = NULL;
+    arglist = Py_BuildValue("(bbb)", blocktype, blockdata, face);
+    result = PyObject_CallObject(world_renderer->get_block_texture, arglist);
+    if (result != NULL)
+    {
+        PyArg_ParseTuple(result, "bbb", uv, uv + 1, orientation);
+        Py_DECREF(result);
+    }
+    Py_DECREF(arglist);
+}
+
+
 inline static void world_renderer_render_face(struct WorldRenderer *world_renderer,
                                  struct Sector *sector,
                                  struct ViewContext *view_context,
                                  unsigned short x, unsigned short y, unsigned short z,
                                  int abs_x, int abs_y, int abs_z,
-                                 char nx, char ny, char nz)
+                                 char nx, char ny, char nz,
+                                 unsigned char face)
 {
     int cx2, cz2, x2, y2, z2;
+    unsigned char orientation = 0;
+    unsigned char uv[2] = {0, 0};
+    float corners[4][2] = {{0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0}};
     struct Sector *light_sector = NULL;
 
     // Safety net:
@@ -49,6 +72,7 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
 
     struct vertex *vertices = world_renderer->vertices + world_renderer->nb_vertices;
     struct color *colors = world_renderer->colors + world_renderer->nb_vertices;
+    struct uv *texcoords = world_renderer->texcoords + world_renderer->nb_vertices;
 
     //TODO: backface culling
     if ((abs_x - view_context->x) * nx + (abs_y - view_context->y) * ny + (abs_z - view_context->z) * nz >= 0)
@@ -91,15 +115,8 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
         else
             vertices[0].z = vertices[1].z = vertices[2].z = vertices[3].z = abs_z;
     }
-    else
-        printf("WTF!?!\n");
 
-    //TODO: color calculation: look AROUND, NOT HERE
-//    PyObject *arglist = Py_BuildValue("(ii"), cx, cz);
-//    result = PyObject_CallObject(..., arglist);
-//    world_renderer->world
-//    Py_DECREF(arglist);
-
+    // Color (lighting) calculation:
     x2 = abs_x + nx;
     y2 = abs_y + ny;
     z2 = abs_z + nz;
@@ -116,8 +133,33 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
         colors[3].r = colors[3].g = colors[3].b = color_value; //TODO
     }
 
-    world_renderer->nb_vertices += 4;
     //TODO: annoying texture calculation
+    // Not optimal, but... Give calculation to python!
+    world_renderer_get_texture(world_renderer, sector->blocktypes[x][z][y],
+                                               sector->blockdata[x][z][y], face,
+                                               uv, &orientation);
+
+    orientation = (5 - orientation) % 4;
+
+    texcoords[0].u = uv[0] / 16. + corners[orientation][0];
+    texcoords[0].v = (15 - uv[1]) / 16. + corners[orientation][1];
+
+    orientation = (orientation + 1) % 4;
+
+    texcoords[1].u = uv[0] / 16. + corners[orientation][0];
+    texcoords[1].v = (15 - uv[1]) / 16. + corners[orientation][1];
+
+    orientation = (orientation + 1) % 4;
+
+    texcoords[2].u = uv[0] / 16. + corners[orientation][0];
+    texcoords[2].v = (15 - uv[1]) / 16. + corners[orientation][1];
+
+    orientation = (orientation + 1) % 4;
+
+    texcoords[3].u = uv[0] / 16. + corners[orientation][0];
+    texcoords[3].v = (15 - uv[1]) / 16. + corners[orientation][1];
+
+    world_renderer->nb_vertices += 4;
 }
 
 
@@ -161,28 +203,35 @@ inline static void world_renderer_render_block(struct WorldRenderer *world_rende
     if (faces & FACE_SOUTH)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, abs_y, abs_z,
-                                   1, 0, 0);
+                                   1, 0, 0,
+                                   5);
     if (faces & FACE_NORTH)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, abs_y, abs_z,
-                                   -1, 0, 0);
+                                   -1, 0, 0,
+                                   4);
     if (faces & FACE_WEST)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, abs_y, abs_z,
-                                   0, 0, 1);
+                                   0, 0, 1,
+                                   3);
     if (faces & FACE_EAST)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, abs_y, abs_z,
-                                   0, 0, -1);
+                                   0, 0, -1,
+                                   2);
     if (faces & FACE_TOP)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, abs_y, abs_z,
-                                   0, 1, 0);
+                                   0, 1, 0,
+                                   1);
     if (faces & FACE_BOTTOM)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, abs_y, abs_z,
-                                   0, -1, 0);
+                                   0, -1, 0,
+                                   0);
 }
+
 
 
 void world_renderer_render_octree(struct WorldRenderer *world_renderer,

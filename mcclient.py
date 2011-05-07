@@ -138,17 +138,12 @@ if __name__ == '__main__':
             messages.KeepAlive().send(con.socket)
 
         if message_pos and world.needs_updating(message_pos.x, message_pos.stance, message_pos.z):
-            vertex, texcoords, colors = world.get_gl_faces(message_pos.x, message_pos.stance, message_pos.z)
+            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(message_pos.x, message_pos.stance, message_pos.z)
             # Hack to speed up things, PyOpenGL sux
-            oldtime = time()
-            floats = pack('f' * (3 * len(vertex)), *(coord for point in vertex for coord in point))
-            floats2 = pack('f' * (2 * len(vertex)), *(coord for point in texcoords for coord in point))
-            floats3 = pack('f' * (3 * len(vertex)), *(c for color in colors for c in color))
-            glVertexPointer(3, GL_FLOAT, 0, floats)
-            glTexCoordPointer(2, GL_FLOAT, 0, floats2)
-            glColorPointer(3, GL_FLOAT, 0, floats3)
-            print('Time ellapsed: %f' % (time() - oldtime))
-            print('Nb vertex drawn: %d' % (len(vertex)))
+            glVertexPointer(3, GL_FLOAT, 0, vertex)
+            glTexCoordPointer(2, GL_FLOAT, 0, texcoords)
+            glColorPointer(3, GL_FLOAT, 0, colors)
+            print('Nb vertex drawn: %d' % (nb_vertices))
 
         if message_pos:
             glClearColor(0.0, 0.0, 1.0, 0)
@@ -161,7 +156,7 @@ if __name__ == '__main__':
             glRotated(180 + message_pos.yaw, 0, 1, 0)
             glTranslated(-message_pos.x, -message_pos.stance, -message_pos.z)
 
-            glDrawArrays(GL_QUADS, 0, len(vertex))
+            glDrawArrays(GL_QUADS, 0, nb_vertices)
 
         pygame.display.flip()
         clock.tick(50)

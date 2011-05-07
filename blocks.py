@@ -22,6 +22,9 @@ class FaceOrientations:
               WEST:  (A, B, C, D)}
 
 
+def get_block_texture(type, data, face):
+    return _block_types.get(type, Block).get_face_texture(data, face)
+
 
 _block_types = {0: None}
 class BlockMeta(type):
