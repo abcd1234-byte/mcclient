@@ -106,9 +106,10 @@ static inline void sector_update_block_faces(struct Sector *sector, short x, sho
     octree_update_face_count(0, new_count - old_count, 16, sector->octrees[y / 16], x, y % 16, z);
 }
 
-void sector_change_block_type(struct Sector *sector, short x, short y, short z, char blocktype)
+void sector_set_block(struct Sector *sector, short x, short y, short z, char blocktype, char blockdata)
 {
     sector->blocktypes[x][z][y] = blocktype;
+    sector->blockdata[x][z][y] = blockdata;
 
     // Update faces
     sector_update_block_faces(sector, x, y, z);
@@ -178,7 +179,7 @@ int main(void)
     }
 
     for (int i=0; i < 42000; i++)
-        sector_change_block_type(sector, rand() % 16, rand() % 128, rand() % 16, rand() % 2);
+        sector_set_block(sector, rand() % 16, rand() % 128, rand() % 16, rand() % 2, 0);
 
 
     idx = 0;

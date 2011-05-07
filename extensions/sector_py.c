@@ -59,6 +59,21 @@ static PyObject *Sector_set_chunk(Sector *self, PyObject *args)
 }
 
 
+static PyObject *Sector_set_block(Sector *self, PyObject *args)
+{
+    unsigned short x = 0, y = 0, z = 0;
+    unsigned char blocktype, blockdata;
+
+    if (!PyArg_ParseTuple(args, "hhhbb", &x, &y, &z, &blocktype, &blockdata))
+        return NULL;
+
+    sector_set_block(self->sector, x, y, z, blocktype, blockdata);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
 static PyObject *Sector_get_block_type(Sector *self, PyObject *args)
 {
     int x = 0, y = 0, z = 0;
@@ -106,6 +121,8 @@ static PyMethodDef Sector_methods[] = {
      "Get block data (TODO)."},
     {"get_block_lighting", (PyCFunction) Sector_get_block_lighting, METH_VARARGS,
      "Get block lighting (TODO)."},
+    {"set_block", (PyCFunction) Sector_set_block, METH_VARARGS,
+     "Set block type and metadata (TODO)."},
     {"count_faces", (PyCFunction) Sector_count_faces, METH_NOARGS,
      "Count number of faces."},
     {NULL} // Sentinel

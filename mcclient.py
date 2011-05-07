@@ -26,8 +26,7 @@ def loadImage(image):
 
     texture = glGenTextures(1)
     glBindTexture(GL_TEXTURE_2D, texture)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
         GL_UNSIGNED_BYTE, textureData)
 
@@ -43,13 +42,14 @@ if __name__ == '__main__':
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
     glEnable(GL_DEPTH_TEST)
 #    glEnable(GL_ALPHA_TEST)
-    glEnable(GL_BLEND)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+#    glEnable(GL_BLEND)
+#    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     glEnable(GL_TEXTURE_2D)
     glDisable(GL_LIGHTING)
     glEnableClientState(GL_VERTEX_ARRAY)
     glEnableClientState(GL_TEXTURE_COORD_ARRAY)
     glEnableClientState(GL_COLOR_ARRAY)
+
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(60, 800./600., 0.1, 128)
@@ -67,11 +67,6 @@ if __name__ == '__main__':
 
     message_pos = None
 
-    last_ping = 0
-
-    vertex = []
-    texcoords = []
-
     clock = pygame.time.Clock()
 
     quit = False
@@ -82,13 +77,13 @@ if __name__ == '__main__':
                 print('[MSG] %s' % message.message)
 
             if type(message) == messages.BlockChange:
-                pass#world.modify_block(message.x, message.y, message.z, message.block_type, message.block_metadata)
+                world.modify_block(message.x, message.y, message.z, message.block_type, message.block_metadata)
 
             if type(message) == messages.MultiBlockChange:
                 for (ox, oy, oz), block_type, block_metadata in zip(message.coordinates, message.types, message.metadatas):
                     ox = ox + message.chunk_x * 16
                     oz = oz + message.chunk_z * 16
-                    #world.modify_block(ox, oy, oz, block_type, block_metadata)
+                    world.modify_block(ox, oy, oz, block_type, block_metadata)
 
             if type(message) == messages.PreChunk:
                 if message.mode == 1:
@@ -132,22 +127,21 @@ if __name__ == '__main__':
             message_pos.x -= sin(radians(message_pos.yaw)) * .2
 
 
-        if message_pos:
-            message_pos.send(con.socket)
-        else:
+        if not message_pos:
             messages.KeepAlive().send(con.socket)
 
-        if message_pos and world.needs_updating(message_pos.x, message_pos.stance, message_pos.z):
-            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(message_pos.x, message_pos.stance, message_pos.z)
-            # Hack to speed up things, PyOpenGL sux
+        else:
+            message_pos.send(con.socket)
+
+            pos = message_pos.x, message_pos.stance, message_pos.z
+            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 30, message_pos.yaw, message_pos.pitch)
+
+            glClearColor(0.0, 0.0, 1.0, 0)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
             glVertexPointer(3, GL_FLOAT, 0, vertex)
             glTexCoordPointer(2, GL_FLOAT, 0, texcoords)
             glColorPointer(3, GL_FLOAT, 0, colors)
-            print('Nb vertex drawn: %d' % (nb_vertices))
-
-        if message_pos:
-            glClearColor(0.0, 0.0, 1.0, 0)
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             #TODO: new pipeline
             glMatrixMode(GL_MODELVIEW)

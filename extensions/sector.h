@@ -23,12 +23,14 @@ struct Sector
     unsigned char blocktypes[16][16][128];
     unsigned char blockdata[16][16][128];
     unsigned char lighting[16][16][128];
-    unsigned char blockfaces[16][16][128]; /* bitmask */
+    unsigned char blockfaces[16][16][128]; /* bitmask, 2 bits (by block) unused here */
     Octree octrees[16];
 };
 
 struct Sector *sector_new(int cx, int cz);
-void sector_change_block_type(struct Sector *sector, short x, short y, short z, char blocktype);
+void sector_set_block(struct Sector *sector,
+                      short x, short y, short z,
+                      char blocktype, char blockdata);
 void sector_gen_faces(struct Sector *sector);
 unsigned int sector_count_faces(struct Sector *sector);
 void sector_set_chunk(struct Sector *sector,

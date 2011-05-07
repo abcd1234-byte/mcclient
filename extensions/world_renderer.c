@@ -20,16 +20,23 @@ inline static bool _is_cube_visible(struct ViewContext *view_context,
                                     unsigned short size,
                                     int x, int y, int z)
 {
-    //TODO
-    float center_x, center_y, center_z;
-    float dist;
-    center_x = x + (float) size / 2;
-    center_y = y + (float) size / 2;
-    center_z = z + (float) size / 2;
+    for (unsigned int i=0; i < 6; i++)
+    {
+        struct Vec3D p_vertex = {x, y, z};
 
-    return ((abs(center_y - view_context->y) - size / 2 < view_context->dist)
-         && (abs(center_x - view_context->x) - size / 2 < view_context->dist)
-         && (abs(center_z - view_context->z) - size / 2 < view_context->dist));
+        //TODO: if ...a >= 0 for one, it is for all!
+        if (view_context->frustum[i].a >= 0)
+            p_vertex.x += size;
+        if (view_context->frustum[i].b >= 0)
+            p_vertex.y += size;
+        if (view_context->frustum[i].c >= 0)
+            p_vertex.z += size;
+
+        if (wrong_side_of_plane(view_context->frustum[i], p_vertex))
+            return false;
+    }
+
+    return true;
 }
 
 
@@ -40,6 +47,7 @@ void world_renderer_get_texture(struct WorldRenderer *world_renderer,
                                 unsigned char *uv,
                                 unsigned char *orientation)
 {
+    //TODO: find another (faster) way to get texture info
     PyObject *arglist = NULL, *result = NULL;
     arglist = Py_BuildValue("(bbb)", blocktype, blockdata, face);
     result = PyObject_CallObject(world_renderer->get_block_texture, arglist);
@@ -63,20 +71,21 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
     int cx2, cz2, x2, y2, z2;
     unsigned char orientation = 0;
     unsigned char uv[2] = {0, 0};
-    float corners[4][2] = {{0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0}};
+    float corners[8][2] = {{0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0},
+                           {0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0}};
     struct Sector *light_sector = NULL;
 
     // Safety net:
     if (world_renderer->nb_vertices == MAX_VERTICES)
         return;
 
+    //backface culling
+    if ((abs_x - view_context->x) * nx + (abs_y - view_context->y) * ny + (abs_z - view_context->z) * nz >= 0)
+        return;
+
     struct vertex *vertices = world_renderer->vertices + world_renderer->nb_vertices;
     struct color *colors = world_renderer->colors + world_renderer->nb_vertices;
     struct uv *texcoords = world_renderer->texcoords + world_renderer->nb_vertices;
-
-    //TODO: backface culling
-    if ((abs_x - view_context->x) * nx + (abs_y - view_context->y) * ny + (abs_z - view_context->z) * nz >= 0)
-        return;
 
     //TODO: vertex calculation
     if (nx != 0)
@@ -127,10 +136,10 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
     if (light_sector != NULL && 0 <= y2 && y <= 127)
     {
         float color_value = powf(0.8f, (15 - light_sector->lighting[x2][z2][y2]));
-        colors[0].r = colors[0].g = colors[0].b = color_value; //TODO
-        colors[1].r = colors[1].g = colors[1].b = color_value; //TODO
-        colors[2].r = colors[2].g = colors[2].b = color_value; //TODO
-        colors[3].r = colors[3].g = colors[3].b = color_value; //TODO
+        colors[0].r = colors[0].g = colors[0].b = color_value;
+        colors[1].r = colors[1].g = colors[1].b = color_value;
+        colors[2].r = colors[2].g = colors[2].b = color_value;
+        colors[3].r = colors[3].g = colors[3].b = color_value;
     }
 
     //TODO: annoying texture calculation
@@ -144,17 +153,17 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
     texcoords[0].u = uv[0] / 16. + corners[orientation][0];
     texcoords[0].v = (15 - uv[1]) / 16. + corners[orientation][1];
 
-    orientation = (orientation + 1) % 4;
+    orientation += 1;
 
     texcoords[1].u = uv[0] / 16. + corners[orientation][0];
     texcoords[1].v = (15 - uv[1]) / 16. + corners[orientation][1];
 
-    orientation = (orientation + 1) % 4;
+    orientation += 1;
 
     texcoords[2].u = uv[0] / 16. + corners[orientation][0];
     texcoords[2].v = (15 - uv[1]) / 16. + corners[orientation][1];
 
-    orientation = (orientation + 1) % 4;
+    orientation += 1;
 
     texcoords[3].u = uv[0] / 16. + corners[orientation][0];
     texcoords[3].v = (15 - uv[1]) / 16. + corners[orientation][1];
@@ -195,39 +204,38 @@ inline static void world_renderer_render_block(struct WorldRenderer *world_rende
                                  struct ViewContext *view_context,
                                  unsigned short x, unsigned short y, unsigned short z)
 {
-    int abs_x, abs_y, abs_z;
+    int abs_x, abs_z;
     unsigned char faces = sector->blockfaces[x][z][y];
     abs_x = sector->cx * 16 + x;
-    abs_y = y;
     abs_z = sector->cz * 16 + z;
     if (faces & FACE_SOUTH)
         world_renderer_render_face(world_renderer, sector, view_context,
-                                   x, y, z, abs_x, abs_y, abs_z,
+                                   x, y, z, abs_x, y, abs_z,
                                    1, 0, 0,
                                    5);
     if (faces & FACE_NORTH)
         world_renderer_render_face(world_renderer, sector, view_context,
-                                   x, y, z, abs_x, abs_y, abs_z,
+                                   x, y, z, abs_x, y, abs_z,
                                    -1, 0, 0,
                                    4);
     if (faces & FACE_WEST)
         world_renderer_render_face(world_renderer, sector, view_context,
-                                   x, y, z, abs_x, abs_y, abs_z,
+                                   x, y, z, abs_x, y, abs_z,
                                    0, 0, 1,
                                    3);
     if (faces & FACE_EAST)
         world_renderer_render_face(world_renderer, sector, view_context,
-                                   x, y, z, abs_x, abs_y, abs_z,
+                                   x, y, z, abs_x, y, abs_z,
                                    0, 0, -1,
                                    2);
     if (faces & FACE_TOP)
         world_renderer_render_face(world_renderer, sector, view_context,
-                                   x, y, z, abs_x, abs_y, abs_z,
+                                   x, y, z, abs_x, y, abs_z,
                                    0, 1, 0,
                                    1);
     if (faces & FACE_BOTTOM)
         world_renderer_render_face(world_renderer, sector, view_context,
-                                   x, y, z, abs_x, abs_y, abs_z,
+                                   x, y, z, abs_x, y, abs_z,
                                    0, -1, 0,
                                    0);
 }
@@ -242,12 +250,12 @@ void world_renderer_render_octree(struct WorldRenderer *world_renderer,
 {
     unsigned char dirs[8][3] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1},
                                 {1, 1, 0}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
-    size /= 2;
+    int x2, y2, z2;
+    size >>= 1;
     if (size == 1)
     {
         for (unsigned char i=0; i < 8; i++)
         {
-            int x2, y2, z2;
             x2 = x + dirs[i][0] * size;
             y2 = y + dirs[i][1] * size;
             z2 = z + dirs[i][2] * size;
@@ -258,10 +266,9 @@ void world_renderer_render_octree(struct WorldRenderer *world_renderer,
     }
     else
     {
+        unsigned short child_idx;
         for (unsigned char i=0; i < 8; i++)
         {
-            int x2, y2, z2;
-            unsigned short child_idx;
             x2 = x + dirs[i][0] * size;
             y2 = y + dirs[i][1] * size;
             z2 = z + dirs[i][2] * size;
@@ -282,7 +289,6 @@ void world_renderer_render_sector(struct WorldRenderer *world_renderer,
     // Per-octree loop
     for (unsigned short cy=0; cy < 16; cy++)
     {
-        //TODO: additional tests
         if (_is_cube_visible(view_context, 16, sector->cx * 16, cy * 16, sector->cz * 16))
             world_renderer_render_octree(world_renderer, sector, sector->octrees[cy], view_context, 0, 16, 0, cy * 16, 0);
     }

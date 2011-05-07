@@ -4,7 +4,8 @@ module1 = Extension('sector', extra_compile_args=['-std=c99'],
                     sources = ['sector_py.c', 'sector.c'])
 
 module2 = Extension('worldrenderer', extra_compile_args=['-std=c99'],
-                    sources = ['world_renderer_py.c', 'world_renderer.c', 'sector.c'])
+                    sources = ['world_renderer_py.c', 'world_renderer.c',
+                               'frustum.c', 'sector.c'])
 
 setup (name = 'Test',
        version = '1.0',

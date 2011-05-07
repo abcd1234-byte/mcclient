@@ -3,6 +3,7 @@
 #include "world_renderer.h"
 #include "sector_py.h"
 
+#include "frustum.h"
 
 typedef struct {
     PyObject_HEAD
@@ -60,14 +61,21 @@ static int WorldRenderer_init(WorldRenderer *self, PyObject *args, PyObject *kwd
 static PyObject *WorldRenderer_render(WorldRenderer *self, PyObject *args)
 {
     struct ViewContext view_context;
+    struct Vec3D pos;
+    double ratio, znear, zfar, yaw, pitch, fov;
     PyObject *iterable = NULL;
     PyObject *iterator = NULL;
     PyObject *item = NULL;
 
-    if (!PyArg_ParseTuple(args, "(ddd)h", &view_context.x, &view_context.y, &view_context.z, &view_context.dist))
-        return NULL;
+    if (!PyArg_ParseTuple(args, "(ddd)dddddd",
+                          &view_context.x, &view_context.y, &view_context.z,
+                          &fov, &ratio, &znear, &zfar, &yaw, &pitch))
+        return -1;
 
     world_renderer_reset_rendering(self->world_renderer);
+
+    pos.x = view_context.x; pos.y = view_context.y; pos.z = view_context.z;
+    make_frustum(fov * M_PI / 180, ratio, znear, zfar, pos, yaw * M_PI / 180, pitch * M_PI / 180, view_context.frustum);
 
     iterable = PyDict_Values(self->world_renderer->sectors_dict);
     iterator = PyObject_GetIter(iterable);

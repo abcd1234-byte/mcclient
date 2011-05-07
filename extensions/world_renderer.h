@@ -1,6 +1,7 @@
 #include <Python.h>
 
 #include "sector.h"
+#include "frustum.h"
 
 #define MAX_VERTICES        (4 * 40000)
 
@@ -24,7 +25,7 @@ struct uv {
 
 struct ViewContext {
     double x, y, z;
-    unsigned short dist;
+    struct Plane frustum[6];
 };
 
 struct WorldRenderer {
