@@ -35,6 +35,11 @@ inline char wrong_side_of_plane(struct Plane plane, struct Vec3D vec)
     return (vec.x * plane.a + vec.y * plane.b + vec.z * plane.c + plane.d) < 0;
 }
 
+inline char right_side_of_plane(struct Plane plane, struct Vec3D vec)
+{
+    return (vec.x * plane.a + vec.y * plane.b + vec.z * plane.c + plane.d) >= 0;
+}
+
 inline struct Plane plane_from_normal_and_point(struct Vec3D normal, struct Vec3D point)
 {
     struct Plane plane;

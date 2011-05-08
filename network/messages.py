@@ -505,6 +505,24 @@ class EntityTeleport(object):
 
 
 @register
+class Explosion(object):
+    id = 0x3c
+
+    def __init__(self, x, y, z, unknown, count, unknown_data):
+        self.x, self.y, self.z = x, y, z
+        self.unknown = unknown
+        self.count = count
+        self.unknown_data = unknown_data
+
+
+    @classmethod
+    def get(cls, socket):
+        x, y, z, unknown, count = struct.unpack('!dddfI', socket.recv(32))
+        return cls(x, y, z, unknown, count, socket.recv(3 * count))
+
+
+
+@register
 class NewInvalidState(object):
     id = 0x46
 

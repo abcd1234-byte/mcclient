@@ -134,7 +134,7 @@ if __name__ == '__main__':
             message_pos.send(con.socket)
 
             pos = message_pos.x, message_pos.stance, message_pos.z
-            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 30, message_pos.yaw, message_pos.pitch)
+            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 60, message_pos.yaw, message_pos.pitch)
 
             glClearColor(0.0, 0.0, 1.0, 0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
