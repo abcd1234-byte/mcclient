@@ -1,4 +1,5 @@
 import struct
+from .buffer import BufferException
 
 __all__ = ['get', 'Handshake', 'Login', 'SpawnPosition']
 
@@ -10,23 +11,22 @@ def register(cls):
     return cls
 
 
-def get(socket):
-    id, = struct.unpack('!B', socket.recv(1))
-    return _known_messages[id].get(socket)
+def get(reader):
+    id, = struct.unpack('!B', reader.read(1))
+    return _known_messages[id].get(reader)
 
 
-
-def read_metadata(socket):
+def read_metadata(reader):
     data = []
-    x, = struct.unpack('!B', socket.recv(1))
+    x, = struct.unpack('!B', reader.read(1))
     while x != 127:
         type = ['b', 'h', 'i', 'f', str, ][x >> 5] #TODO
         if type is str:
-            data.append(read_string(socket))
+            data.append(read_string(reader))
         else:
-            data.append(struct.unpack('!%s' % type, socket.recv(struct.calcsize(type))))
+            data.append(struct.unpack('!%s' % type, reader.read(struct.calcsize(type))))
 
-        x, = struct.unpack('!B', socket.recv(1))
+        x, = struct.unpack('!B', reader.read(1))
     return data
 
 
@@ -37,9 +37,9 @@ def write_string(socket, string):
     socket.send(data)
 
 
-def read_string(socket):
-    length, = struct.unpack('!H', socket.recv(2))
-    return socket.recv(length * 2).decode('utf-16-be')
+def read_string(reader):
+    length, = struct.unpack('!H', reader.read(2))
+    return reader.read(length * 2).decode('utf-16-be')
 
 
 
@@ -51,7 +51,7 @@ class KeepAlive(object):
         pass
 
     @classmethod
-    def get(cls, socket):
+    def get(cls, reader):
         return cls()
 
     def send(self, socket):
@@ -68,8 +68,8 @@ class Handshake(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(read_string(socket))
+    def get(cls, reader):
+        return cls(read_string(reader))
 
 
     def send(self, socket):
@@ -85,8 +85,8 @@ class ChatMessage(object):
         self.message = message
 
     @classmethod
-    def get(cls, socket):
-        return cls(read_string(socket))
+    def get(cls, reader):
+        return cls(read_string(reader))
 
     def send(self, socket):
         socket.send(struct.pack('!B', self.id))
@@ -105,9 +105,9 @@ class Login(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(struct.unpack('!I', socket.recv(4))[0], read_string(socket),
-                   struct.unpack('!Q', socket.recv(8))[0], struct.unpack('!B', socket.recv(1)[0]))
+    def get(cls, reader):
+        return cls(struct.unpack('!I', reader.read(4))[0], read_string(reader),
+                   struct.unpack('!Q', reader.read(8))[0], struct.unpack('!B', reader.read(1)[0]))
 
 
     def send(self, socket):
@@ -125,8 +125,8 @@ class TimeUpdate(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!Q', socket.recv(8)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!Q', reader.read(8)))
 
 
 @register
@@ -141,8 +141,8 @@ class EntityEquipment(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!IHHh', socket.recv(10)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!IHHh', reader.read(10)))
 
 
 
@@ -157,8 +157,8 @@ class SpawnPosition(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!iii', socket.recv(4 * 3)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!iii', reader.read(4 * 3)))
 
 
 @register
@@ -169,8 +169,8 @@ class UpdateHealth(object):
         self.health = health
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!H', socket.recv(2)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!H', reader.read(2)))
 
 
 @register
@@ -183,8 +183,8 @@ class Animation(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!IB', socket.recv(5)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!IB', reader.read(5)))
 
     def send(self, socket):
         socket.write(struct.pack('!BIB', self.id, self.eid, self.animation))
@@ -204,10 +204,10 @@ class NamedEntitySpawn(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = list(struct.unpack('!I', socket.recv(4)))
-        args.append(read_string(socket))
-        args.extend(struct.unpack('!iiibbH', socket.recv(16)))
+    def get(cls, reader):
+        args = list(struct.unpack('!I', reader.read(4)))
+        args.append(read_string(reader))
+        args.extend(struct.unpack('!iiibbH', reader.read(16)))
         return cls(*args)
 
 
@@ -227,8 +227,8 @@ class PickupSpawn(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!IhBhiiibbb', socket.recv(24)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!IhBhiiibbb', reader.read(24)))
 
 
 
@@ -246,9 +246,9 @@ class MobSpawn(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = list(struct.unpack('!IBiiibb', socket.recv(19)))
-        args.append(read_metadata(socket))
+    def get(cls, reader):
+        args = list(struct.unpack('!IBiiibb', reader.read(19)))
+        args.append(read_metadata(reader))
         return cls(*args)
 
 
@@ -262,8 +262,8 @@ class EntityVelocity(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = list(struct.unpack('!Ihhh', socket.recv(10)))
+    def get(cls, reader):
+        args = list(struct.unpack('!Ihhh', reader.read(10)))
         return cls(*args)
 
 
@@ -277,8 +277,8 @@ class DestroyEntity(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!I', socket.recv(4)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!I', reader.read(4)))
 
 
 @register
@@ -291,8 +291,8 @@ class EntityStatus(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!Ib', socket.recv(5)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!Ib', reader.read(5)))
 
 
 
@@ -305,9 +305,9 @@ class EntityMetaData(object):
         self.metadata = metadata
 
     @classmethod
-    def get(cls, socket):
-        args = list(struct.unpack('!I', socket.recv(4)))
-        args.append(read_metadata(socket))
+    def get(cls, reader):
+        args = list(struct.unpack('!I', reader.read(4)))
+        args.append(read_metadata(reader))
         return cls(*args)
 
 
@@ -322,8 +322,8 @@ class PreChunk(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = struct.unpack('!ii?', socket.recv(9))
+    def get(cls, reader):
+        args = struct.unpack('!ii?', reader.read(9))
         return cls(*args)
 
 
@@ -338,9 +338,9 @@ class MapChunk(object):
         self.compressed_data = compressed_data
 
     @classmethod
-    def get(cls, socket):
-        x, y, z, size_x, size_y, size_z, compressed_size = list(struct.unpack('!ihiBBBI', socket.recv(17)))
-        compressed_data = socket.recv(compressed_size)
+    def get(cls, reader):
+        x, y, z, size_x, size_y, size_z, compressed_size = list(struct.unpack('!ihiBBBI', reader.read(17)))
+        compressed_data = reader.read(compressed_size)
         size_x, size_y, size_z = size_x + 1, size_y + 1, size_z + 1
         return cls(x, y, z, size_x, size_y, size_z, compressed_size, compressed_data)
 
@@ -358,13 +358,13 @@ class MultiBlockChange(object):
 
 
     @classmethod
-    def get(cls, socket):
-        chunk_x, chunk_y, array_size = struct.unpack('!iiH', socket.recv(10))
+    def get(cls, reader):
+        chunk_x, chunk_y, array_size = struct.unpack('!iiH', reader.read(10))
         coordinates = [(b >> 12, (b >> 8 & 0xF), b & 0xFF)
                             for b in struct.unpack('!%s' % ('H' * array_size),
-                                                   socket.recv(2 * array_size))]
-        types = struct.unpack('!%s' % ('B' * array_size), socket.recv(array_size))
-        metadatas = struct.unpack('!%s' % ('B' * array_size), socket.recv(array_size))
+                                                   reader.read(2 * array_size))]
+        types = struct.unpack('!%s' % ('B' * array_size), reader.read(array_size))
+        metadatas = struct.unpack('!%s' % ('B' * array_size), reader.read(array_size))
         return cls(chunk_x, chunk_y, array_size, coordinates, types, metadatas)
 
 
@@ -380,8 +380,8 @@ class BlockChange(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!ibiBB', socket.recv(11)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!ibiBB', reader.read(11)))
 
 
 
@@ -398,8 +398,8 @@ class PlayerPosLook(object):
 
 
     @classmethod
-    def get(cls, socket):
-        x, stance, y, z, yaw, pitch, on_ground = struct.unpack('!ddddff?', socket.recv(41))
+    def get(cls, reader):
+        x, stance, y, z, yaw, pitch, on_ground = struct.unpack('!ddddff?', reader.read(41))
         return cls(x, y, stance, z, yaw, pitch, on_ground)
 
     def send(self, socket):
@@ -417,8 +417,8 @@ class CollectItem(object):
         self.collected_eid = collected_eid
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!II', socket.recv(8)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!II', reader.read(8)))
 
 
 
@@ -433,8 +433,8 @@ class AddObject(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!IBiii', socket.recv(17)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!IBiii', reader.read(17)))
 
 
 @register
@@ -448,10 +448,10 @@ class Painting(object):
         self.direction = direction
 
     @classmethod
-    def get(cls, socket):
-        args = list(struct.unpack('!I', socket.recv(4)))
-        args.append(read_string(socket))
-        args.extend(struct.unpack('!iiii', socket.recv(16)))
+    def get(cls, reader):
+        args = list(struct.unpack('!I', reader.read(4)))
+        args.append(read_string(reader))
+        args.extend(struct.unpack('!iiii', reader.read(16)))
         return cls(*args)
 
 
@@ -466,8 +466,8 @@ class EntityRelativeMove(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = struct.unpack('!Ibbb', socket.recv(7))
+    def get(cls, reader):
+        args = struct.unpack('!Ibbb', reader.read(7))
         return cls(*args)
 
 
@@ -483,8 +483,8 @@ class EntityLookRelativeMove(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = struct.unpack('!Ibbbbb', socket.recv(9))
+    def get(cls, reader):
+        args = struct.unpack('!Ibbbbb', reader.read(9))
         return cls(*args)
 
 
@@ -499,8 +499,8 @@ class EntityTeleport(object):
         self.pitch = pitch
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!Iiiibb', socket.recv(18)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!Iiiibb', reader.read(18)))
 
 
 
@@ -516,9 +516,9 @@ class Explosion(object):
 
 
     @classmethod
-    def get(cls, socket):
-        x, y, z, unknown, count = struct.unpack('!dddfI', socket.recv(32))
-        return cls(x, y, z, unknown, count, socket.recv(3 * count))
+    def get(cls, reader):
+        x, y, z, unknown, count = struct.unpack('!dddfI', reader.read(32))
+        return cls(x, y, z, unknown, count, reader.read(3 * count))
 
 
 
@@ -530,8 +530,8 @@ class NewInvalidState(object):
         self.reason = reason
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!B', socket.recv(1)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!B', reader.read(1)))
 
 
 @register
@@ -544,8 +544,8 @@ class Weather(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!I?iii', socket.recv(17)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!I?iii', reader.read(17)))
 
 
 
@@ -561,11 +561,11 @@ class SetSlot(object):
 
 
     @classmethod
-    def get(cls, socket):
-        window_id, slot, item_id = struct.unpack('!BHh', socket.recv(5))
+    def get(cls, reader):
+        window_id, slot, item_id = struct.unpack('!BHh', reader.read(5))
         if item_id != -1:
             item = [item_id]
-            item.extend(struct.unpack('!BH', socket.recv(3)))
+            item.extend(struct.unpack('!BH', reader.read(3)))
         else:
             item = None
         return cls(window_id, slot, item)
@@ -583,17 +583,17 @@ class WindowItems(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = list(struct.unpack('!BH', socket.recv(3)))
+    def get(cls, reader):
+        args = list(struct.unpack('!BH', reader.read(3)))
         count = args[-1]
         payload = []
         for slot in range(count):
-            item_id, = struct.unpack('!h', socket.recv(2))
+            item_id, = struct.unpack('!h', reader.read(2))
             if item_id == -1:
                 payload.append(None)
             else:
                 item = [item_id]
-                item.extend(struct.unpack('!BH', socket.recv(3)))
+                item.extend(struct.unpack('!BH', reader.read(3)))
                 payload.append(tuple(item))
         args.append(payload)
         return cls(*args)
@@ -612,12 +612,12 @@ class UpdateSign(object):
 
 
     @classmethod
-    def get(cls, socket):
-        args = list(struct.unpack('!ihi', socket.recv(10)))
-        args.append(read_string(socket))
-        args.append(read_string(socket))
-        args.append(read_string(socket))
-        args.append(read_string(socket))
+    def get(cls, reader):
+        args = list(struct.unpack('!ihi', reader.read(10)))
+        args.append(read_string(reader))
+        args.append(read_string(reader))
+        args.append(read_string(reader))
+        args.append(read_string(reader))
         return cls(*args)
 
 
@@ -630,8 +630,8 @@ class IncrementStatistic(object):
         self.amount = amount
 
     @classmethod
-    def get(cls, socket):
-        return cls(*struct.unpack('!Ib', socket.recv(5)))
+    def get(cls, reader):
+        return cls(*struct.unpack('!Ib', reader.read(5)))
 
 
 
@@ -644,8 +644,8 @@ class Disconnect(object):
 
 
     @classmethod
-    def get(cls, socket):
-        return cls(read_string(socket))
+    def get(cls, reader):
+        return cls(read_string(reader))
 
     def send(self, socket):
         socket.send(struct.pack('!B', self.id))
