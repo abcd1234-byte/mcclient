@@ -174,6 +174,21 @@ class UpdateHealth(object):
 
 
 @register
+class UseBed(object):
+    id = 0x11
+
+    def __init__(self, eid, unknown, x, y, z):
+        self.eid = eid
+        self.unknown = unknown
+        self.x, self.y, self.z = x, y, z
+
+    @classmethod
+    def get(cls, reader):
+        return cls(*struct.unpack('!Ibibi', reader.read(14)))
+
+
+
+@register
 class Animation(object):
     id = 0x12
 

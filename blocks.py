@@ -65,7 +65,7 @@ class Grass(Block):
         if face == FaceDirections.BOTTOM:
             return (2, 0, FaceOrientations.NORTH)
         elif face == FaceDirections.TOP:
-            return (1, 9, FaceOrientations.NORTH) #TODO
+            return (1, 9, FaceOrientations.NORTH) #TODO: (2, 0) with coloration
         else:
             return (3, 0, FaceOrientations.NORTH)
 
@@ -113,6 +113,14 @@ class StationaryWater(Block):
         return (13, 12, FaceOrientations.NORTH)
 
 
+class Sand(Block):
+    id = 12
+
+    @classmethod
+    def get_face_texture(cls, metadata, face):
+        return (2, 1, FaceOrientations.NORTH)
+
+
 
 class Gravel(Block):
     id = 13
@@ -153,6 +161,14 @@ class Wood(Block):
             else:
                 return (5, 7, FaceOrientations.NORTH)
 
+
+class Leaves(Block):
+    id = 18
+    transparent = True
+
+    @classmethod
+    def get_face_texture(cls, metadata, face):
+        return (4, 3, FaceOrientations.NORTH) # Needs coloration, but well
 
 
 class Glass(Block):

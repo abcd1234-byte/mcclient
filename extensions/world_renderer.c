@@ -1,7 +1,17 @@
 #include "world_renderer.h"
 #include "sector.h"
 #include "sector_py.h"
+#include "blocktypes.h"
 #include "math.h"
+#include "frustum.h"
+
+
+#define         BOTTOM      0 // -y
+#define         TOP         1 // +y
+#define         EAST        2 // -z
+#define         WEST        3 // +z
+#define         NORTH       4 // -x
+#define         SOUTH       5 // +x
 
 
 struct WorldRenderer *world_renderer_new(void)
@@ -14,6 +24,7 @@ struct WorldRenderer *world_renderer_new(void)
 void world_renderer_reset_rendering(struct WorldRenderer *world_renderer)
 {
     world_renderer->nb_vertices = 0;
+    world_renderer->nb_alpha_vertices = 0;
 }
 
 inline static bool _is_cube_visible(struct ViewContext *view_context,
@@ -74,13 +85,33 @@ void world_renderer_get_texture(struct WorldRenderer *world_renderer,
 }
 
 
-inline static void world_renderer_render_face(struct WorldRenderer *world_renderer,
-                                 struct Sector *sector,
-                                 struct ViewContext *view_context,
-                                 unsigned short x, unsigned short y, unsigned short z,
-                                 int abs_x, int abs_y, int abs_z,
-                                 char nx, char ny, char nz,
-                                 unsigned char face)
+/*
+      F──────G
+     ╱┊     ╱│
+    B——————C │
+    │ E┈┈┈┈│┈H
+    │/     │╱
+    A──────D
+*/
+
+#define     CORNER_A        {0., 0., 0.}
+#define     CORNER_B        {0., 1., 0.}
+#define     CORNER_C        {1., 1., 0.}
+#define     CORNER_D        {1., 0., 0.}
+
+#define     CORNER_E        {0., 0., 1.}
+#define     CORNER_F        {0., 1., 1.}
+#define     CORNER_G        {1., 1., 1.}
+#define     CORNER_H        {1., 0., 1.}
+
+inline static void _render_face(struct vertex *vertices, struct color *colors,
+                                struct uv *texcoords, unsigned int *nb_vertices,
+                                struct WorldRenderer *world_renderer,
+                                struct Sector *sector,
+                                unsigned short x, unsigned short y, unsigned short z,
+                                int abs_x, int abs_y, int abs_z,
+                                char nx, char ny, char nz,
+                                unsigned char face)
 {
     int cx2, cz2, x2, y2, z2;
     unsigned char orientation = 0;
@@ -88,55 +119,34 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
     float lightlevels[] = {.04398046511104, .0549755813888, .068719476736,
                            .08589934592, .1073741824, .134217728, .16777216,
                            .2097152, .262144, .32768, .4096, .512, .64, .8, 1};
-    float corners[8][2] = {{0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0},
-                           {0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0}};
+    float uvcorners[8][2] = {{0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0},
+                             {0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0}};
+
+
+    struct vertex faces[6][4] = {
+        [BOTTOM] = {CORNER_A, CORNER_E, CORNER_H, CORNER_D},
+        [TOP] = {CORNER_B, CORNER_C, CORNER_G, CORNER_F},
+        [EAST] = {CORNER_A, CORNER_D, CORNER_C, CORNER_B},
+        [WEST] = {CORNER_E, CORNER_F, CORNER_G, CORNER_H},
+        [NORTH] = {CORNER_A, CORNER_B, CORNER_F, CORNER_E},
+        [SOUTH] = {CORNER_H, CORNER_G, CORNER_C, CORNER_D}};
+
     struct Sector *light_sector = NULL;
 
     // Safety net:
-    if (world_renderer->nb_vertices == MAX_VERTICES)
+    if ((*nb_vertices) == MAX_VERTICES)
         return;
+    *nb_vertices += 4;
 
-    struct vertex *vertices = world_renderer->vertices + world_renderer->nb_vertices;
-    struct color *colors = world_renderer->colors + world_renderer->nb_vertices;
-    struct uv *texcoords = world_renderer->texcoords + world_renderer->nb_vertices;
+    vertices[3] = faces[face][0];
+    vertices[2] = faces[face][1];
+    vertices[1] = faces[face][2];
+    vertices[0] = faces[face][3];
 
-    //TODO: vertex calculation
-    if (nx != 0)
-    {
-        vertices[0].y = abs_y;      vertices[0].z = abs_z;
-        vertices[1].y = abs_y + 1;  vertices[1].z = abs_z;
-        vertices[2].y = abs_y + 1;  vertices[2].z = abs_z + 1;
-        vertices[3].y = abs_y;      vertices[3].z = abs_z + 1;
-
-        if (nx == 1)
-            vertices[0].x = vertices[1].x = vertices[2].x = vertices[3].x = abs_x + 1;
-        else
-            vertices[0].x = vertices[1].x = vertices[2].x = vertices[3].x = abs_x;
-    }
-    else if (ny != 0)
-    {
-        vertices[0].x = abs_x;      vertices[0].z = abs_z;
-        vertices[1].x = abs_x;      vertices[1].z = abs_z + 1;
-        vertices[2].x = abs_x + 1;  vertices[2].z = abs_z + 1;
-        vertices[3].x = abs_x + 1;  vertices[3].z = abs_z;
-
-        if (ny == 1)
-            vertices[0].y = vertices[1].y = vertices[2].y = vertices[3].y = abs_y + 1;
-        else
-            vertices[0].y = vertices[1].y = vertices[2].y = vertices[3].y = abs_y;
-    }
-    else if (nz != 0)
-    {
-        vertices[0].x = abs_x;      vertices[0].y = abs_y;
-        vertices[1].x = abs_x;      vertices[1].y = abs_y + 1;
-        vertices[2].x = abs_x + 1;  vertices[2].y = abs_y + 1;
-        vertices[3].x = abs_x + 1;  vertices[3].y = abs_y;
-
-        if (nz == 1)
-            vertices[0].z = vertices[1].z = vertices[2].z = vertices[3].z = abs_z + 1;
-        else
-            vertices[0].z = vertices[1].z = vertices[2].z = vertices[3].z = abs_z;
-    }
+    vertices[0].x += abs_x; vertices[0].y += abs_y; vertices[0].z += abs_z;
+    vertices[1].x += abs_x; vertices[1].y += abs_y; vertices[1].z += abs_z;
+    vertices[2].x += abs_x; vertices[2].y += abs_y; vertices[2].z += abs_z;
+    vertices[3].x += abs_x; vertices[3].y += abs_y; vertices[3].z += abs_z;
 
     // Color (lighting) calculation:
     x2 = abs_x + nx;
@@ -166,25 +176,56 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
 
     orientation = (5 - orientation) % 4;
 
-    texcoords[0].u = uv[0] / 16. + corners[orientation][0];
-    texcoords[0].v = (15 - uv[1]) / 16. + corners[orientation][1];
+    texcoords[0].u = uv[0] / 16. + uvcorners[orientation][0];
+    texcoords[0].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
     orientation += 1;
 
-    texcoords[1].u = uv[0] / 16. + corners[orientation][0];
-    texcoords[1].v = (15 - uv[1]) / 16. + corners[orientation][1];
+    texcoords[1].u = uv[0] / 16. + uvcorners[orientation][0];
+    texcoords[1].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
     orientation += 1;
 
-    texcoords[2].u = uv[0] / 16. + corners[orientation][0];
-    texcoords[2].v = (15 - uv[1]) / 16. + corners[orientation][1];
+    texcoords[2].u = uv[0] / 16. + uvcorners[orientation][0];
+    texcoords[2].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
     orientation += 1;
 
-    texcoords[3].u = uv[0] / 16. + corners[orientation][0];
-    texcoords[3].v = (15 - uv[1]) / 16. + corners[orientation][1];
+    texcoords[3].u = uv[0] / 16. + uvcorners[orientation][0];
+    texcoords[3].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+}
 
-    world_renderer->nb_vertices += 4;
+
+inline static void world_renderer_render_face(struct WorldRenderer *world_renderer,
+                                 struct Sector *sector,
+                                 struct ViewContext *view_context,
+                                 unsigned short x, unsigned short y, unsigned short z,
+                                 int abs_x, int abs_y, int abs_z,
+                                 char nx, char ny, char nz,
+                                 unsigned char face)
+{
+    struct vertex *vertices;
+    struct color *colors;
+    struct uv *texcoords;
+
+    if (blocktypes[sector->blocktypes[x][z][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
+    {
+        vertices = world_renderer->vertices + (MAX_VERTICES + world_renderer->nb_alpha_vertices);
+        colors = world_renderer->colors + (MAX_VERTICES + world_renderer->nb_alpha_vertices);
+        texcoords = world_renderer->texcoords + (MAX_VERTICES + world_renderer->nb_alpha_vertices);
+        _render_face(vertices, colors, texcoords, &world_renderer->nb_alpha_vertices,
+                     world_renderer, sector, x, y, z, abs_x, abs_y, abs_z,
+                     nx, ny, nz, face);
+    }
+    else
+    {
+        vertices = world_renderer->vertices + world_renderer->nb_vertices;
+        colors = world_renderer->colors + world_renderer->nb_vertices;
+        texcoords = world_renderer->texcoords + world_renderer->nb_vertices;
+        _render_face(vertices, colors, texcoords, &world_renderer->nb_vertices,
+                     world_renderer, sector, x, y, z, abs_x, abs_y, abs_z,
+                     nx, ny, nz, face);
+    }
 }
 
 
@@ -223,6 +264,9 @@ inline static void world_renderer_render_block(struct WorldRenderer *world_rende
     int abs_x, abs_z;
     double dir_x, dir_y, dir_z;
     unsigned char faces = sector->blockfaces[x][z][y];
+    struct Vec3D southwesttop = CORNER_G;
+    struct Vec3D northeastbottom = CORNER_A;
+
     abs_x = sector->cx * 16 + x;
     abs_z = sector->cz * 16 + z;
 
@@ -230,38 +274,45 @@ inline static void world_renderer_render_block(struct WorldRenderer *world_rende
     dir_y = y - view_context->y;
     dir_z = abs_z - view_context->z;
 
-    if (faces & FACE_SOUTH && dir_x < 0)
+    southwesttop.x += dir_x;
+    southwesttop.y += dir_y;
+    southwesttop.z += dir_z;
+
+    northeastbottom.x += dir_x;
+    northeastbottom.y += dir_y;
+    northeastbottom.z += dir_z;
+
+    if (faces & FACE_SOUTH && southwesttop.x < 0)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, y, abs_z,
                                    1, 0, 0,
-                                   5);
-    if (faces & FACE_NORTH && dir_x > 0)
+                                   SOUTH);
+    if (faces & FACE_NORTH && northeastbottom.x > 0)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, y, abs_z,
                                    -1, 0, 0,
-                                   4);
-    if (faces & FACE_WEST && dir_z < 0)
+                                   NORTH);
+    if (faces & FACE_WEST && southwesttop.z < 0)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, y, abs_z,
                                    0, 0, 1,
-                                   3);
-    if (faces & FACE_EAST && dir_z > 0)
+                                   WEST);
+    if (faces & FACE_EAST && northeastbottom.z > 0)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, y, abs_z,
                                    0, 0, -1,
-                                   2);
-    if (faces & FACE_TOP && dir_y < 0)
+                                   EAST);
+    if (faces & FACE_TOP && southwesttop.y < 0)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, y, abs_z,
                                    0, 1, 0,
-                                   1);
-    if (faces & FACE_BOTTOM && dir_y > 0)
+                                   TOP);
+    if (faces & FACE_BOTTOM && northeastbottom.y > 0)
         world_renderer_render_face(world_renderer, sector, view_context,
                                    x, y, z, abs_x, y, abs_z,
                                    0, -1, 0,
-                                   0);
+                                   BOTTOM);
 }
-
 
 
 void world_renderer_render_octree_notest(struct WorldRenderer *world_renderer,

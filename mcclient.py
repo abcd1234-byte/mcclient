@@ -15,7 +15,6 @@ from world import World
 
 
 
-
 def loadImage(image):
     textureSurface = pygame.image.load(image)
 
@@ -129,12 +128,11 @@ if __name__ == '__main__':
 
         if not message_pos:
             messages.KeepAlive().send(con.socket)
-
         else:
             message_pos.send(con.socket)
 
             pos = message_pos.x, message_pos.stance, message_pos.z
-            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 60, message_pos.yaw, message_pos.pitch)
+            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 50, message_pos.yaw, message_pos.pitch)
 
             glClearColor(0.0, 0.0, 1.0, 0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -150,6 +148,8 @@ if __name__ == '__main__':
             glRotated(180 + message_pos.yaw, 0, 1, 0)
             glTranslated(-message_pos.x, -message_pos.stance, -message_pos.z)
 
+#Uncomment to check backface culling
+#            glPolygonMode(GL_FRONT, GL_POINT)
             glDrawArrays(GL_QUADS, 0, nb_vertices)
 
         pygame.display.flip()

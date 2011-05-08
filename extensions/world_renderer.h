@@ -3,7 +3,7 @@
 #include "sector.h"
 #include "frustum.h"
 
-#define MAX_VERTICES        (4 * 40000)
+#define MAX_VERTICES        (2 * 32768)
 
 
 struct vertex {
@@ -31,9 +31,10 @@ struct ViewContext {
 struct WorldRenderer {
     PyObject *sectors_dict, *get_block_texture;
     unsigned int nb_vertices;
-    struct vertex vertices[MAX_VERTICES];
-    struct color colors[MAX_VERTICES];
-    struct uv texcoords[MAX_VERTICES];
+    unsigned int nb_alpha_vertices;
+    struct vertex vertices[MAX_VERTICES * 2];
+    struct color colors[MAX_VERTICES * 2];
+    struct uv texcoords[MAX_VERTICES * 2];
 };
 
 

@@ -34,12 +34,17 @@ class World(object):
         assert oz + size_z <= 16
 
         data = zlib.decompress(compressed_data)
+        if (cx, cz) not in self.csectors:
+            self.allocate_sector(cx, cz)
         self.csectors[cx, cz].set_chunk(ox, oy, oz, size_x, size_y, size_z, data)
 
 
     def modify_block(self, x, y, z, type, metadata):
         cx, cz, ox, oy, oz = self.get_block_coords(x, y, z)
-        self.csectors[cx, cz].set_block(ox, oy, oz, type, metadata)
+        try:
+            self.csectors[cx, cz].set_block(ox, oy, oz, type, metadata)
+        except KeyError:
+            pass
 
 
     def get_gl_faces(self, pos, fov, ratio, znear, zfar, yaw, pitch):

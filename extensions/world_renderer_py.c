@@ -95,6 +95,18 @@ static PyObject *WorldRenderer_render(WorldRenderer *self, PyObject *args)
         Py_DECREF(item);
     }
 
+    memcpy(self->world_renderer->vertices + self->world_renderer->nb_vertices,
+           self->world_renderer->vertices + MAX_VERTICES,
+           sizeof(struct vertex) * self->world_renderer->nb_alpha_vertices);
+    memcpy(self->world_renderer->colors + self->world_renderer->nb_vertices,
+           self->world_renderer->colors + MAX_VERTICES,
+           sizeof(struct color) * self->world_renderer->nb_alpha_vertices);
+    memcpy(self->world_renderer->texcoords + self->world_renderer->nb_vertices,
+           self->world_renderer->texcoords + MAX_VERTICES,
+           sizeof(struct uv) * self->world_renderer->nb_alpha_vertices);
+
+    self->world_renderer->nb_vertices += self->world_renderer->nb_alpha_vertices;
+
     Py_DECREF(iterator);
     Py_DECREF(iterable);
 
