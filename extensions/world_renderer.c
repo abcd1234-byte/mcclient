@@ -174,25 +174,30 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
                                                sector->blockdata[x][z][y], face,
                                                uv, &orientation);
 
-    orientation = (5 - orientation) % 4;
+    if (blocktypes[sector->blocktypes[x][z][y]].texfunc == NULL)
+    {
+        uv[0] = blocktypes[sector->blocktypes[x][z][y]].texcoords.u;
+        uv[1] = blocktypes[sector->blocktypes[x][z][y]].texcoords.v;
+        orientation = 0;
 
-    texcoords[0].u = uv[0] / 16. + uvcorners[orientation][0];
-    texcoords[0].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        texcoords[0].u = uv[0] / 16. + uvcorners[orientation][0];
+        texcoords[0].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
-    orientation += 1;
+        orientation += 1;
 
-    texcoords[1].u = uv[0] / 16. + uvcorners[orientation][0];
-    texcoords[1].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        texcoords[1].u = uv[0] / 16. + uvcorners[orientation][0];
+        texcoords[1].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
-    orientation += 1;
+        orientation += 1;
 
-    texcoords[2].u = uv[0] / 16. + uvcorners[orientation][0];
-    texcoords[2].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        texcoords[2].u = uv[0] / 16. + uvcorners[orientation][0];
+        texcoords[2].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
-    orientation += 1;
+        orientation += 1;
 
-    texcoords[3].u = uv[0] / 16. + uvcorners[orientation][0];
-    texcoords[3].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        texcoords[3].u = uv[0] / 16. + uvcorners[orientation][0];
+        texcoords[3].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+    }
 }
 
 

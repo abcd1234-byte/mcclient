@@ -1,3 +1,6 @@
+#ifndef __WORLD_RENDERER_H__
+#define __WORLD_RENDERER_H__
+
 #include <Python.h>
 
 #include "sector.h"
@@ -43,3 +46,4 @@ void world_renderer_reset_rendering(struct WorldRenderer *world_renderer);
 void world_renderer_render_sector(struct WorldRenderer *world_renderer, struct Sector *sector, struct ViewContext *view_context);
 struct Sector *world_renderer_get_sector(struct WorldRenderer *world_renderer, int cx, int cz);
 
+#endif
