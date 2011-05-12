@@ -119,17 +119,15 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     float lightlevels[] = {.04398046511104, .0549755813888, .068719476736,
                            .08589934592, .1073741824, .134217728, .16777216,
                            .2097152, .262144, .32768, .4096, .512, .64, .8, 1};
-    float uvcorners[8][2] = {{0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0},
-                             {0, 0}, {0, 1./16.}, {1./16., 1./16.}, {1./16., 0}};
 
 
     struct vertex faces[6][4] = {
         [BOTTOM] = {CORNER_A, CORNER_E, CORNER_H, CORNER_D},
         [TOP] = {CORNER_B, CORNER_C, CORNER_G, CORNER_F},
         [EAST] = {CORNER_A, CORNER_D, CORNER_C, CORNER_B},
-        [WEST] = {CORNER_E, CORNER_F, CORNER_G, CORNER_H},
-        [NORTH] = {CORNER_A, CORNER_B, CORNER_F, CORNER_E},
-        [SOUTH] = {CORNER_H, CORNER_G, CORNER_C, CORNER_D}};
+        [WEST] = {CORNER_H, CORNER_E, CORNER_F, CORNER_G},
+        [NORTH] = {CORNER_E, CORNER_A, CORNER_B, CORNER_F},
+        [SOUTH] = {CORNER_D, CORNER_H, CORNER_G, CORNER_C}};
 
     struct Sector *light_sector = NULL;
 
@@ -197,6 +195,14 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
 
         texcoords[3].u = uv[0] / 16. + uvcorners[orientation][0];
         texcoords[3].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+    }
+    else
+    {
+        //TODO: move that upwards, right after safety net
+        if (!blocktypes[sector->blocktypes[x][z][y]].texfunc(x, y, z, sector,
+                                                             face,
+                                                             texcoords, colors))
+            *nb_vertices -= 4;
     }
 }
 

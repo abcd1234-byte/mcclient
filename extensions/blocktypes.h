@@ -9,9 +9,9 @@
 #define     BLOCKTYPE_FLAG_TRANSPARENT  4
 #define     BLOCKTYPE_FLAG_NONSOLID     8
 
-typedef void (*TextureFunc) (unsigned short x, unsigned short y, unsigned short z,
+typedef bool (*TextureFunc) (unsigned short x, unsigned short y, unsigned short z,
                              struct Sector *sector, unsigned char face,
-                             struct uv *texcoords, struct color *color);
+                             struct uv *texcoords, struct color *colors);
 
 struct BlockType {
     const char *name;
@@ -24,5 +24,6 @@ struct BlockType {
 };
 
 extern struct BlockType blocktypes[256];
+extern float uvcorners[8][2];
 
 #endif

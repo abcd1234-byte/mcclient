@@ -1,5 +1,463 @@
 #include "blocktypes.h"
 
+#define         BOTTOM      0 // -y
+#define         TOP         1 // +y
+#define         EAST        2 // -z
+#define         WEST        3 // +z
+#define         NORTH       4 // -x
+#define         SOUTH       5 // +x
+
+float uvcorners[8][2] = {{0, 1./16.}, {1./16., 1./16}, {1./16., 0}, {0, 0},
+                         {0, 1./16.}, {1./16., 1./16}, {1./16., 0}, {0, 0}};
+
+bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                   struct Sector *sector, unsigned char face,
+                   struct uv *texcoords, struct color *colors)
+{
+    //TODO
+    float u, v;
+    unsigned char type = sector->blocktypes[x][z][y];
+    if (face == BOTTOM)
+    {
+        // Dirt
+        u = blocktypes[3].texcoords.u;
+        v = blocktypes[3].texcoords.v;
+
+        texcoords[0].u = u / 16. + uvcorners[0][0];
+        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+        texcoords[1].u = u / 16. + uvcorners[1][0];
+        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+        texcoords[2].u = u / 16. + uvcorners[2][0];
+        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+        texcoords[3].u = u / 16. + uvcorners[3][0];
+        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    }
+    else if (face == TOP)
+    {
+        //TODO: (0, 0) + color
+        texcoords[0].u = uvcorners[0][0];
+        texcoords[0].v = 15 / 16. + uvcorners[0][1];
+
+        texcoords[1].u = uvcorners[1][0];
+        texcoords[1].v = 15 / 16. + uvcorners[1][1];
+
+        texcoords[2].u = uvcorners[2][0];
+        texcoords[2].v = 15 / 16. + uvcorners[2][1];
+
+        texcoords[3].u = uvcorners[3][0];
+        texcoords[3].v = 15 / 16. + uvcorners[3][1];
+
+        if (type == 2)
+        {
+            colors[0].r = colors[0].b = 0;
+            colors[1].r = colors[1].b = 0;
+            colors[2].r = colors[2].b = 0;
+            colors[3].r = colors[3].b = 0;
+        }
+        else
+        {
+            colors[0].r *= 2;
+            colors[0].g *= 2;
+            colors[0].b *= 2;
+            colors[3] = colors[2] =  colors[1] = colors[0];
+
+        }
+    }
+    else
+    {
+        //TODO: blocktypes[type].texcoords
+        u = blocktypes[type].texcoords.u;
+        v = blocktypes[type].texcoords.v;
+
+        texcoords[0].u = u / 16. + uvcorners[0][0];
+        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+        texcoords[1].u = u / 16. + uvcorners[1][0];
+        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+        texcoords[2].u = u / 16. + uvcorners[2][0];
+        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+        texcoords[3].u = u / 16. + uvcorners[3][0];
+        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    }
+
+    return true;
+}
+
+bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                  struct Sector *sector, unsigned char face,
+                  struct uv *texcoords, struct color *colors)
+{
+    //TODO
+    float u, v;
+    unsigned char type = sector->blocktypes[x][z][y];
+    if (face == BOTTOM || face == TOP)
+    {
+        u = blocktypes[type].texcoords.u + 1;
+        v = blocktypes[type].texcoords.v;
+
+        texcoords[0].u = u / 16. + uvcorners[0][0];
+        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+        texcoords[1].u = u / 16. + uvcorners[1][0];
+        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+        texcoords[2].u = u / 16. + uvcorners[2][0];
+        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+        texcoords[3].u = u / 16. + uvcorners[3][0];
+        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    }
+    else
+    {
+        //TODO: check wood type
+        u = blocktypes[type].texcoords.u;
+        v = blocktypes[type].texcoords.v;
+
+        texcoords[0].u = u / 16. + uvcorners[0][0];
+        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+        texcoords[1].u = u / 16. + uvcorners[1][0];
+        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+        texcoords[2].u = u / 16. + uvcorners[2][0];
+        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+        texcoords[3].u = u / 16. + uvcorners[3][0];
+        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    }
+
+    return true;
+}
+
+
+bool leaves_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                    struct Sector *sector, unsigned char face,
+                    struct uv *texcoords, struct color *colors)
+{
+    //TODO
+    float u, v;
+    unsigned char type = sector->blocktypes[x][z][y];
+
+    //TODO: switch with type
+    u = blocktypes[type].texcoords.u;
+    v = blocktypes[type].texcoords.v;
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    //TODO: switch with type and decay
+    colors[0].r = colors[0].b = 0;
+    colors[1].r = colors[1].b = 0;
+    colors[2].r = colors[2].b = 0;
+    colors[3].r = colors[3].b = 0;
+
+    return true;
+}
+
+
+bool dispenser_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                       struct Sector *sector, unsigned char face,
+                       struct uv *texcoords, struct color *colors)
+{
+    float u, v;
+    unsigned char type = sector->blocktypes[x][z][y];
+
+    if (face == TOP || face == BOTTOM)
+    {
+        u = 14;
+        v = 3;
+    }
+    else if (face == sector->blockdata[x][z][y])
+    {
+        u = blocktypes[type].texcoords.u;
+        v = blocktypes[type].texcoords.v;
+    }
+    else
+    {
+        u = 13;
+        v = 2;
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    return true;
+}
+
+
+bool bed_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                 struct Sector *sector, unsigned char face,
+                 struct uv *texcoords, struct color *colors)
+{
+    float u, v;
+    unsigned char type = sector->blocktypes[x][z][y];
+    unsigned char orientation_to_face[] = {WEST, NORTH, EAST, SOUTH};
+    unsigned char orientation;
+
+    orientation = sector->blockdata[x][z][y] & 7;
+
+    if (face == TOP || face == BOTTOM)
+    {
+        //TODO: check check check
+        if (sector->blockdata[x][z][y] & 8) // Head
+        {
+            u = 7;
+            v = 8;
+            orientation += 1;
+        }
+        else
+        {
+            u = 6;
+            v = 8;
+            orientation = (orientation + 1) % 4;
+        }
+    }
+    else
+    {
+        if (sector->blockdata[x][z][y] & 8) // Head
+        {
+            if (orientation_to_face[orientation] == face)
+                u = 8;
+            else
+                u = 7;
+            v = 9;
+            //TODO: orientation
+        }
+        else
+        {
+            if (orientation_to_face[(orientation + 2) % 4] == face)
+                u = 5;
+            else
+                u = 6;
+            v = 9;
+            //TODO: orientation
+        }
+        orientation = 0;
+        //TODO: unused faces (between the two blocks, and under the two blocks)
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[orientation][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[orientation][1];
+
+    texcoords[1].u = u / 16. + uvcorners[orientation + 1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[orientation + 1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[orientation + 2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[orientation + 2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[orientation + 3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[orientation + 3][1];
+
+    return true;
+}
+
+
+bool wool_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                  struct Sector *sector, unsigned char face,
+                  struct uv *texcoords, struct color *colors)
+{
+    float u, v;
+    unsigned char data = sector->blockdata[x][z][y];
+
+    switch (data)
+    {
+        case 0: // Normal (white)
+            u = 0; v = 4; break;
+        case 1: // Orange
+            u = 2; v = 13; break;
+        case 2: // Magenta
+            u = 2; v = 12; break;
+        case 3: // Light blue
+            u = 2; v = 11; break;
+        //TODO: the over types...
+        default:
+            u = 0; v = 4;
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    return true;
+}
+
+
+bool bookshelf_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                       struct Sector *sector, unsigned char face,
+                       struct uv *texcoords, struct color *colors)
+{
+    float u, v;
+
+    //TODO: check
+    if (face == BOTTOM || face == TOP)
+    {
+        u = blocktypes[5].texcoords.u;
+        v = blocktypes[5].texcoords.v;
+    }
+    else
+    {
+        u = blocktypes[47].texcoords.u;
+        v = blocktypes[47].texcoords.v;
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    return true;
+}
+
+
+bool crafting_table_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                            struct Sector *sector, unsigned char face,
+                            struct uv *texcoords, struct color *colors)
+{
+    float u, v;
+
+    if (face == TOP)
+    {
+        u = 11;
+        v = 2;
+    }
+    else if (face == BOTTOM)
+    {
+        u = blocktypes[5].texcoords.u;
+        v = blocktypes[5].texcoords.v;
+    }
+    else
+    {
+        u = 11 + 0; //TODO: 11-12
+        v = 3;
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    return true;
+}
+
+
+bool seeds_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                   struct Sector *sector, unsigned char face,
+                   struct uv *texcoords, struct color *colors)
+{
+    float u, v;
+
+    if (face == TOP || face == BOTTOM)
+    {
+        return false;
+    }
+    else
+    {
+        u = 8 + (sector->blockdata[x][z][y] & 7);
+        v = 5;
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    return true;
+}
+
+
+bool pumpkin_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                     struct Sector *sector, unsigned char face,
+                     struct uv *texcoords, struct color *colors)
+{
+    //TODO: check
+    float u, v;
+    unsigned char orientation_to_face[] = {EAST, SOUTH, WEST, NORTH};
+    unsigned char type = sector->blocktypes[x][z][y];
+
+    if (face == TOP)
+    {
+        u = 6;
+        v = 6;
+    }
+    else if (face == orientation_to_face[sector->blockdata[x][z][y] & 5])
+    {
+        u = blocktypes[type].texcoords.u;
+        v = blocktypes[type].texcoords.v;
+    }
+    else
+    {
+        u = 6;
+        v = 7;
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    return true;
+}
+
+
 struct BlockType blocktypes[256] = {
     [0] = {.name = "air",
            .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_TRANSPARENT},
@@ -7,7 +465,7 @@ struct BlockType blocktypes[256] = {
            .texcoords = {1, 0}},
     [2] = {.name = "grass",
            .texcoords = {3, 0},
-           .texfunc = NULL}, //TODO: color top
+           .texfunc = grass_texfunc},
     [3] = {.name = "dirt",
            .texcoords = {2, 0}},
     [4] = {.name = "cobblestone",
@@ -46,11 +504,11 @@ struct BlockType blocktypes[256] = {
             .texcoords = {2, 2}},
     [17] = {.name = "wood",
             .texcoords = {4, 1},
-            .texfunc = NULL}, //TODO
+            .texfunc = wood_texfunc}, //TODO: switch based on type
     [18] = {.name = "leaves",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {4, 3},
-            .texfunc = NULL}, //TODO
+            .texfunc = leaves_texfunc}, //TODO: switch based on type and decay
     [20] = {.name = "glass",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {1, 3}},
@@ -61,7 +519,7 @@ struct BlockType blocktypes[256] = {
     [23] = {.name = "dispenser",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {14, 2},
-            .texfunc = NULL}, //TODO
+            .texfunc = dispenser_texfunc},
     [24] = {.name = "sandstone",
             .texcoords = {0, 11}, //TODO
             .texfunc = NULL}, //TODO
@@ -71,7 +529,7 @@ struct BlockType blocktypes[256] = {
     [26] = {.name = "bed",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_USABLE,
             .texcoords = {6, 8},
-            .texfunc = NULL}, //TODO
+            .texfunc = bed_texfunc},
     [27] = {.name = "powered rail",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {3, 11},
@@ -82,7 +540,7 @@ struct BlockType blocktypes[256] = {
             .texfunc = NULL}, // TODO
     [35] = {.name = "wool",
             .texcoords = {0, 4}, //TODO
-            .texfunc = NULL}, //TODO
+            .texfunc = wool_texfunc}, //TODO: handle more colors
     [37] = {.name = "dandelion",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {13, 0},
@@ -114,7 +572,8 @@ struct BlockType blocktypes[256] = {
     [46] = {.name = "tnt",
             .texfunc = NULL}, //TODO
     [47] = {.name = "bookshelf",
-            .texfunc = NULL}, //TODO
+            .texcoords = {3, 2},
+            .texfunc = bookshelf_texfunc}, //TODO: check
     [48] = {.name = "moss stone",
             .texcoords = {4, 2}},
     [49] = {.name = "obsidian",
@@ -145,21 +604,22 @@ struct BlockType blocktypes[256] = {
     [58] = {.name = "crafting table",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {11, 2},
-            .texfunc = NULL}, //TODO
+            .texfunc = crafting_table_texfunc},
     [59] = {.name = "seeds",
-            .texcoords = {13, 5}, //TODO
-            .texfunc = NULL}, //TODO
+            .flags = BLOCKTYPE_FLAG_TRANSPARENT,
+            .texcoords = {8, 5}, //TODO: use that in function
+            .texfunc = seeds_texfunc},
     [60] = {.name = "farmland",
             .texcoords = {6, 5}, //TODO
             .texfunc = NULL}, //TODO
     [61] = {.name = "furnace",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {12, 2},
-            .texfunc = NULL}, //TODO: share function with dispenser
+            .texfunc = dispenser_texfunc},
     [62] = {.name = "burning furnace",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {13, 3},
-            .texfunc = NULL}, //TODO: share function with dispenser
+            .texfunc = dispenser_texfunc},
     [63] = {.name = "sign post",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
             .texfunc = NULL}, //TODO
@@ -206,7 +666,7 @@ struct BlockType blocktypes[256] = {
             .texfunc = NULL}, //TODO
     [78] = {.name = "snow",
            .texcoords = {4, 4},
-           .texfunc = NULL}, //TODO: share with grass
+           .texfunc = grass_texfunc},
     [79] = {.name = "ice",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
            .texcoords = {3, 4}},
@@ -223,12 +683,13 @@ struct BlockType blocktypes[256] = {
             .texfunc = NULL}, //TODO: share with flowers/mushrooms?
     [84] = {.name = "jukebox",
             .texcoords = {11, 4},
-            .texfunc = NULL}, //TODO: share with trees?
+            .texfunc = NULL}, //TODO: share with bookshelf?
     [85] = {.name = "fence",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONBLOCK,
             .texfunc = NULL}, //TODO
     [86] = {.name = "pumpkin",
-            .texfunc = NULL}, //TODO
+            .texcoords = {7, 7},
+            .texfunc = pumpkin_texfunc},
     [87] = {.name = "netherrack",
             .texcoords = {7, 6}},
     [88] = {.name = "soul sand",
@@ -239,7 +700,8 @@ struct BlockType blocktypes[256] = {
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texfunc = NULL}, //TODO
     [91] = {.name = "jack-o-lantern",
-            .texfunc = NULL}, //TODO: share with pumpkin
+            .texcoords = {8, 7},
+            .texfunc = pumpkin_texfunc},
     [92] = {.name = "cake block",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_USABLE,
             .texfunc = NULL}, //TODO
