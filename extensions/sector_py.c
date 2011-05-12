@@ -4,8 +4,20 @@
 #include "sector_py.h"
 
 
+static PyTypeObject SectorType;
+
+
 static void Sector_dealloc(Sector *self)
 {
+    if (self->sector->east != NULL && self->sector->east->west == self->sector)
+        self->sector->east->west = NULL;
+    if (self->sector->west != NULL && self->sector->west->east == self->sector)
+        self->sector->west->east = NULL;
+    if (self->sector->south != NULL && self->sector->south->north == self->sector)
+        self->sector->south->north = NULL;
+    if (self->sector->north != NULL && self->sector->north->south == self->sector)
+        self->sector->north->south = NULL;
+
     free(self->sector);
     self->ob_type->tp_free((PyObject *) self);
 }
@@ -37,6 +49,49 @@ static PyObject *Sector_init(Sector *self, PyObject *args, PyObject *kwds)
 }
 
 
+static PyObject *Sector_add_neighbour(Sector *self, PyObject *args)
+{
+    int dx = 0, dz = 0;
+    PyObject *neighbour_pointer = NULL;
+    Sector *neighbour = NULL;
+
+    if (!PyArg_ParseTuple(args, "O(ii)", &neighbour_pointer, &dx, &dz))
+        return NULL;
+
+    if (!PyObject_TypeCheck(neighbour_pointer, &SectorType))
+    {
+        PyErr_SetString(PyExc_TypeError, "neighbour must be a Sector");
+        return NULL;
+    }
+
+    neighbour = (Sector *) neighbour_pointer;
+
+    if (dx == -1)
+    {
+        self->sector->north = neighbour->sector;
+        self->sector->north->south = self->sector;
+    }
+    if (dx == 1)
+    {
+        self->sector->south = neighbour->sector;
+        self->sector->south->north = self->sector;
+    }
+    if (dz == -1)
+    {
+        self->sector->east = neighbour->sector;
+        self->sector->east->west = self->sector;
+    }
+    if (dz == 1)
+    {
+        self->sector->west = neighbour->sector;
+        self->sector->west->east = self->sector;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
 static PyObject *Sector_set_chunk(Sector *self, PyObject *args)
 {
     int start_x = 0, start_y = 0, start_z = 0, size_x = 0, size_y = 0, size_z = 0;
@@ -53,6 +108,7 @@ static PyObject *Sector_set_chunk(Sector *self, PyObject *args)
                                    data);
 
     sector_gen_faces(self->sector);
+    sector_update_boundaries(self->sector);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -83,6 +139,7 @@ static PyObject *Sector_get_block_type(Sector *self, PyObject *args)
 
     return PyInt_FromLong(self->sector->blocktypes[x][z][y]);
 }
+
 
 static PyObject *Sector_get_block_data(Sector *self, PyObject *args)
 {
@@ -125,6 +182,8 @@ static PyMethodDef Sector_methods[] = {
      "Set block type and metadata (TODO)."},
     {"count_faces", (PyCFunction) Sector_count_faces, METH_NOARGS,
      "Count number of faces."},
+    {"add_neighbour", (PyCFunction) Sector_add_neighbour, METH_VARARGS,
+     "Add a neighbour to the sector."},
     {NULL} // Sentinel
 };
 

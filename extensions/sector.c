@@ -26,6 +26,59 @@ void octree_update_face_count(short idx, short delta, short size, Octree octree,
 }
 
 
+//TODO: cleanup/optimize
+inline bool get_block(struct Sector *sector, short x, short z,
+                      struct Sector **block_sector,
+                      short *block_x, short *block_z)
+{
+    (*block_sector) = sector;
+
+    if (x > 0 && x < 16)
+        *block_x = x;
+    else if (x < 0)
+    {
+        if (x >= -16 && (*block_sector)->north != NULL)
+        {
+            *block_sector = (*block_sector)->north;
+            *block_x = x + 16;
+        }
+        else return false;
+    }
+    else
+    {
+        if (x < 32 && (*block_sector)->south != NULL)
+        {
+            *block_sector = (*block_sector)->south;
+            *block_x = x - 16;
+        }
+        else return false;
+    }
+
+
+    if (z > 0 && z < 16)
+        *block_z = z;
+    else if (z < 0)
+    {
+        if (z >= -16 && (*block_sector)->east != NULL)
+        {
+            *block_sector = (*block_sector)->east;
+            *block_z = z + 16;
+        }
+        else return false;
+    }
+    else
+    {
+        if (z < 32 && (*block_sector)->west != NULL)
+        {
+            *block_sector = (*block_sector)->west;
+            *block_z = z - 16;
+        }
+        else return false;
+    }
+
+    return true;
+}
+
 
 // Sector-related functions:
 struct Sector *sector_new(int cx, int cz)
@@ -75,10 +128,13 @@ void sector_set_chunk(struct Sector *sector,
 }
 
 
-static inline void _sector_compute_faces(struct Sector *sector, short x, short y, short z)
+static inline void _sector_compute_block_faces(struct Sector *sector, short x, short y, short z)
 {
     sector->blockfaces[x][z][y] = 0;
     unsigned char blocktype = sector->blocktypes[x][z][y];
+    struct Sector *bsector = sector;
+    short bx, bz;
+
     if (blocktype != 0)
     {
         if (blocktypes[blocktype].flags & BLOCKTYPE_FLAG_NONBLOCK)
@@ -87,17 +143,17 @@ static inline void _sector_compute_faces(struct Sector *sector, short x, short y
         }
         else if (blocktypes[blocktype].flags & BLOCKTYPE_FLAG_TRANSPARENT)
         {
-            if (x == 15 || sector->blocktypes[x + 1][z][y] != blocktype)
+            if (!get_block(sector, x + 1, z, &bsector, &bx, &bz) || bsector->blocktypes[bx][bz][y] != blocktype)
                 sector->blockfaces[x][z][y] |= FACE_SOUTH;
             if (y == 128 || sector->blocktypes[x][z][y + 1] != blocktype)
                 sector->blockfaces[x][z][y] |= FACE_TOP;
-            if (z == 15 || sector->blocktypes[x][z + 1][y] != blocktype)
+            if (!get_block(sector, x, z + 1, &bsector, &bx, &bz) || bsector->blocktypes[bx][bz][y] != blocktype)
                 sector->blockfaces[x][z][y] |= FACE_WEST;
-            if (x == 0 || sector->blocktypes[x - 1][z][y] != blocktype)
+            if (!get_block(sector, x - 1, z, &bsector, &bx, &bz) || bsector->blocktypes[bx][bz][y] != blocktype)
                 sector->blockfaces[x][z][y] |= FACE_NORTH;
             if (y == 0 || sector->blocktypes[x][z][y - 1] != blocktype)
                 sector->blockfaces[x][z][y] |= FACE_BOTTOM;
-            if (z == 0 || sector->blocktypes[x][z - 1][y] != blocktype)
+            if (!get_block(sector, x, z - 1, &bsector, &bx, &bz) || bsector->blocktypes[bx][bz][y] != blocktype)
                 sector->blockfaces[x][z][y] |= FACE_EAST;
         }
         else
@@ -123,32 +179,56 @@ static inline void sector_update_block_faces(struct Sector *sector, short x, sho
     short old_count, new_count;
 
     old_count = _faces_count[sector->blockfaces[x][z][y] >> 3] + _faces_count[sector->blockfaces[x][z][y] & 7];
-    _sector_compute_faces(sector, x, y, z);
+    _sector_compute_block_faces(sector, x, y, z);
     new_count = _faces_count[sector->blockfaces[x][z][y] >> 3] + _faces_count[sector->blockfaces[x][z][y] & 7];
 
     octree_update_face_count(0, new_count - old_count, 16, sector->octrees[y / 16], x, y % 16, z);
 }
 
+
 void sector_set_block(struct Sector *sector, short x, short y, short z, char blocktype, char blockdata)
 {
+    struct Sector *block_sector = sector;
+    short block_x = 0, block_z = 0;
+
     sector->blocktypes[x][z][y] = blocktype;
     sector->blockdata[x][z][y] = blockdata;
 
     // Update faces
     sector_update_block_faces(sector, x, y, z);
-    if (x > 0)
-        sector_update_block_faces(sector, x - 1, y, z);
+    if (get_block(sector, x - 1, z, &block_sector, &block_x, &block_z))
+        sector_update_block_faces(block_sector, block_x, y, block_z);
+    if (get_block(sector, x, z - 1, &block_sector, &block_x, &block_z))
+        sector_update_block_faces(block_sector, block_x, y, block_z);
+    if (get_block(sector, x + 1, z, &block_sector, &block_x, &block_z))
+        sector_update_block_faces(block_sector, block_x, y, block_z);
+    if (get_block(sector, x, z + 1, &block_sector, &block_x, &block_z))
+        sector_update_block_faces(block_sector, block_x, y, block_z);
     if (y > 0)
         sector_update_block_faces(sector, x, y - 1, z);
-    if (z > 0)
-        sector_update_block_faces(sector, x, y, z - 1);
-    if (x < 15)
-        sector_update_block_faces(sector, x + 1, y, z);
     if (y < 127)
         sector_update_block_faces(sector, x, y + 1, z);
-    if (z < 15)
-        sector_update_block_faces(sector, x, y, z + 1);
 }
+
+
+void sector_update_boundaries(struct Sector *sector)
+{
+    for (unsigned int i=0; i < 128; i++)
+    {
+        for (unsigned int j=0; j < 16; j++)
+        {
+            if (sector->south != NULL)
+                sector_update_block_faces(sector->south, 0, i, j);
+            if (sector->north != NULL)
+                sector_update_block_faces(sector->north, 15, i, j);
+            if (sector->west != NULL)
+                sector_update_block_faces(sector->west, j, i, 0);
+            if (sector->east != NULL)
+                sector_update_block_faces(sector->east, j, i, 15);
+        }
+    }
+}
+
 
 void sector_gen_faces(struct Sector *sector)
 {
@@ -160,7 +240,7 @@ void sector_gen_faces(struct Sector *sector)
         {
             for (unsigned short z=0; z < 16; z++)
             {
-                _sector_compute_faces(sector, x, y, z);
+                _sector_compute_block_faces(sector, x, y, z);
                 octree_update_face_count(0, _faces_count[sector->blockfaces[x][z][y] >> 3] + _faces_count[sector->blockfaces[x][z][y] & 7], 16, sector->octrees[y / 16], x, y % 16, z);
             }
         }

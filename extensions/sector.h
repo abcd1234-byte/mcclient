@@ -24,6 +24,7 @@ struct Sector
     unsigned char blockdata[16][16][128];
     unsigned char lighting[16][16][128];
     unsigned char blockfaces[16][16][128]; /* bitmask, 2 bits (by block) unused here */
+    struct Sector *east, *west, *north, *south;
     Octree octrees[16];
 };
 
@@ -38,5 +39,6 @@ void sector_set_chunk(struct Sector *sector,
                       short size_x, short size_y, short size_z,
                       const unsigned char *data);
 void get_sector_coords(int *x, int *y, int *z, int *cx, int *cz);
+void sector_update_boundaries(struct Sector *sector);
 
 #endif

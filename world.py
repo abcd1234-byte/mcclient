@@ -25,6 +25,10 @@ class World(object):
     def allocate_sector(self, cx, cz):
         # [x][z][y]
         self.csectors[(cx, cz)] = CSector(cx, cz)
+        for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            key = cx + dx, cz + dz
+            if key in self.csectors:
+                self.csectors[(cx, cz)].add_neighbour(self.csectors[key], (dx, dz))
 
 
     def map_chunk(self, x, y, z, size_x, size_y, size_z, compressed_data):

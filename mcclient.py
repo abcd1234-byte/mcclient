@@ -41,8 +41,8 @@ if __name__ == '__main__':
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
     glEnable(GL_DEPTH_TEST)
 #    glEnable(GL_ALPHA_TEST)
-#    glEnable(GL_BLEND)
-#    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     glEnable(GL_TEXTURE_2D)
     glDisable(GL_LIGHTING)
     glEnableClientState(GL_VERTEX_ARRAY)
@@ -132,7 +132,7 @@ if __name__ == '__main__':
             message_pos.send(con.socket)
 
             pos = message_pos.x, message_pos.stance, message_pos.z
-            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 50, message_pos.yaw, message_pos.pitch)
+            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 80, message_pos.yaw, message_pos.pitch)
 
             glClearColor(0.0, 0.0, 1.0, 0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
