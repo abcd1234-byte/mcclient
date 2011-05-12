@@ -1,5 +1,4 @@
 import zlib
-from blocks import get_block_texture
 from sector import Sector as CSector
 from time import time
 from worldrenderer import WorldRenderer
@@ -11,7 +10,7 @@ class World(object):
         # Sector: sectors[(x, z)]
         self.csectors = {}
         self.faces = []
-        self.renderer = WorldRenderer(self.csectors, get_block_texture)
+        self.renderer = WorldRenderer(self.csectors)
 
 
     def delete_sector(self, cx, cz):

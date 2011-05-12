@@ -1,6 +1,5 @@
 #include "world_renderer.h"
 #include "sector.h"
-#include "sector_py.h"
 #include "blocktypes.h"
 #include "math.h"
 #include "frustum.h"
@@ -65,26 +64,6 @@ inline static bool _is_cube_visible(struct ViewContext *view_context,
 }
 
 
-void world_renderer_get_texture(struct WorldRenderer *world_renderer,
-                                unsigned char blocktype,
-                                unsigned char blockdata,
-                                unsigned char face,
-                                unsigned char *uv,
-                                unsigned char *orientation)
-{
-    //TODO: find another (faster) way to get texture info
-    PyObject *arglist = NULL, *result = NULL;
-    arglist = Py_BuildValue("(bbb)", blocktype, blockdata, face);
-    result = PyObject_CallObject(world_renderer->get_block_texture, arglist);
-    if (result != NULL)
-    {
-        PyArg_ParseTuple(result, "bbb", uv, uv + 1, orientation);
-        Py_DECREF(result);
-    }
-    Py_DECREF(arglist);
-}
-
-
 /*
       F──────G
      ╱┊     ╱│
@@ -113,7 +92,7 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
                                 char nx, char ny, char nz,
                                 unsigned char face)
 {
-    int cx2, cz2, x2, y2, z2;
+    short x2, y2, z2;
     unsigned char orientation = 0;
     unsigned char uv[2] = {0, 0};
     float lightlevels[] = {.04398046511104, .0549755813888, .068719476736,
@@ -134,44 +113,8 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     // Safety net:
     if ((*nb_vertices) == MAX_VERTICES)
         return;
-    *nb_vertices += 4;
 
-    vertices[3] = faces[face][0];
-    vertices[2] = faces[face][1];
-    vertices[1] = faces[face][2];
-    vertices[0] = faces[face][3];
-
-    vertices[0].x += abs_x; vertices[0].y += abs_y; vertices[0].z += abs_z;
-    vertices[1].x += abs_x; vertices[1].y += abs_y; vertices[1].z += abs_z;
-    vertices[2].x += abs_x; vertices[2].y += abs_y; vertices[2].z += abs_z;
-    vertices[3].x += abs_x; vertices[3].y += abs_y; vertices[3].z += abs_z;
-
-    // Color (lighting) calculation:
-    x2 = abs_x + nx;
-    y2 = abs_y + ny;
-    z2 = abs_z + nz;
-
-    // Bottleneck #3
-    // (Bottleneck #2 is OpenGL/PyOpenGL, VBO and interlaced buffers might help)
-    get_sector_coords(&x2, &y2, &z2, &cx2, &cz2);
-    light_sector = world_renderer_get_sector(world_renderer, cx2, cz2);
-
-    if (light_sector != NULL && 0 <= y2 && y <= 127)
-    {
-        float color_value = lightlevels[light_sector->lighting[x2][z2][y2]];
-        colors[0].r = colors[0].g = colors[0].b = color_value;
-        colors[1].r = colors[1].g = colors[1].b = color_value;
-        colors[2].r = colors[2].g = colors[2].b = color_value;
-        colors[3].r = colors[3].g = colors[3].b = color_value;
-    }
-
-    //TODO: annoying texture calculation
-    // Bottleneck #1
-    // Not optimal, but... Give calculation to python!
-    world_renderer_get_texture(world_renderer, sector->blocktypes[x][z][y],
-                                               sector->blockdata[x][z][y], face,
-                                               uv, &orientation);
-
+    // Annoying texture calculation
     if (blocktypes[sector->blocktypes[x][z][y]].texfunc == NULL)
     {
         uv[0] = blocktypes[sector->blocktypes[x][z][y]].texcoords.u;
@@ -198,11 +141,34 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     }
     else
     {
-        //TODO: move that upwards, right after safety net
         if (!blocktypes[sector->blocktypes[x][z][y]].texfunc(x, y, z, sector,
                                                              face,
                                                              texcoords, colors))
-            *nb_vertices -= 4;
+            return;
+    }
+
+    *nb_vertices += 4;
+
+    vertices[3] = faces[face][0];
+    vertices[2] = faces[face][1];
+    vertices[1] = faces[face][2];
+    vertices[0] = faces[face][3];
+
+    vertices[0].x += abs_x; vertices[0].y += abs_y; vertices[0].z += abs_z;
+    vertices[1].x += abs_x; vertices[1].y += abs_y; vertices[1].z += abs_z;
+    vertices[2].x += abs_x; vertices[2].y += abs_y; vertices[2].z += abs_z;
+    vertices[3].x += abs_x; vertices[3].y += abs_y; vertices[3].z += abs_z;
+
+    // (Bottleneck #2 is OpenGL/PyOpenGL, VBO and interlaced buffers might help)
+    // Color (lighting) calculation:
+    y2 = y + ny;
+    if (0 <= y2 && y <= 127 && get_block(sector, x + nx, z + nz, &light_sector, &x2, &z2))
+    {
+        float color_value = lightlevels[light_sector->lighting[x2][z2][y2]];
+        colors[0].r = colors[0].g = colors[0].b = color_value;
+        colors[1].r = colors[1].g = colors[1].b = color_value;
+        colors[2].r = colors[2].g = colors[2].b = color_value;
+        colors[3].r = colors[3].g = colors[3].b = color_value;
     }
 }
 
@@ -238,34 +204,6 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
                      nx, ny, nz, face);
     }
 }
-
-
-struct Sector *world_renderer_get_sector(struct WorldRenderer *world_renderer,
-                                         int cx, int cz)
-{
-    struct Sector *sector;
-    PyObject *key = NULL, *result = NULL;
-
-    key = Py_BuildValue("(ii)", cx, cz);
-    result = PyObject_GetItem(world_renderer->sectors_dict, key);
-    Py_DECREF(key);
-
-    if (result == NULL)
-        return NULL;
-
-    /* TODO: Check type
-    if (!PyObject_TypeCheck(result, SectorType))
-    {
-        Py_DECREF(result);
-        return NULL;
-    }*/
-
-    sector = ((Sector *) result)->sector;
-    Py_DECREF(result);
-
-    return sector;
-}
-
 
 inline static void world_renderer_render_block(struct WorldRenderer *world_renderer,
                                  struct Sector *sector,

@@ -7,13 +7,14 @@
 
 typedef struct {
     PyObject_HEAD
+    PyObject *sectors_dict;
     struct WorldRenderer *world_renderer;
 } WorldRenderer;
 
 
 static void WorldRenderer_dealloc(WorldRenderer *self)
 {
-    Py_DECREF(self->world_renderer->sectors_dict);
+    Py_DECREF(self->sectors_dict);
     free(self->world_renderer);
     self->ob_type->tp_free((PyObject *) self);
 }
@@ -28,9 +29,8 @@ static PyObject *WorldRenderer_new(PyTypeObject *type, PyObject *args, PyObject 
     {
         self->world_renderer = world_renderer_new();
         Py_INCREF(Py_None);
-        self->world_renderer->sectors_dict = Py_None;
+        self->sectors_dict = Py_None;
         Py_INCREF(Py_None);
-        self->world_renderer->get_block_texture = Py_None;
     }
 
     return (PyObject *) self;
@@ -39,19 +39,14 @@ static PyObject *WorldRenderer_new(PyTypeObject *type, PyObject *args, PyObject 
 
 static int WorldRenderer_init(WorldRenderer *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *sectors_dict = NULL, *get_block_texture, *tmp = NULL;
+    PyObject *sectors_dict = NULL, *tmp = NULL;
 
-    if (!PyArg_ParseTuple(args, "OO", &sectors_dict, &get_block_texture))
+    if (!PyArg_ParseTuple(args, "O", &sectors_dict))
         return -1;
 
-    tmp = self->world_renderer->sectors_dict;
+    tmp = self->sectors_dict;
     Py_INCREF(sectors_dict);
-    self->world_renderer->sectors_dict = sectors_dict;
-    Py_XDECREF(tmp);
-
-    tmp = self->world_renderer->get_block_texture;
-    Py_INCREF(get_block_texture);
-    self->world_renderer->get_block_texture = get_block_texture;
+    self->sectors_dict = sectors_dict;
     Py_XDECREF(tmp);
 
     return 0;
@@ -77,7 +72,7 @@ static PyObject *WorldRenderer_render(WorldRenderer *self, PyObject *args)
     pos.x = view_context.x; pos.y = view_context.y; pos.z = view_context.z;
     make_frustum(fov * M_PI / 180, ratio, znear, zfar, pos, yaw * M_PI / 180, pitch * M_PI / 180, view_context.frustum);
 
-    iterable = PyDict_Values(self->world_renderer->sectors_dict);
+    iterable = PyDict_Values(self->sectors_dict);
     iterator = PyObject_GetIter(iterable);
     if (iterator == NULL)
         return NULL;

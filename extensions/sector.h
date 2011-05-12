@@ -40,5 +40,8 @@ void sector_set_chunk(struct Sector *sector,
                       const unsigned char *data);
 void get_sector_coords(int *x, int *y, int *z, int *cx, int *cz);
 void sector_update_boundaries(struct Sector *sector);
+bool get_block(struct Sector *sector, short x, short z,
+               struct Sector **block_sector,
+               short *block_x, short *block_z);
 
 #endif
