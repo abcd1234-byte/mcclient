@@ -6,7 +6,7 @@
 #include "sector.h"
 #include "frustum.h"
 
-#define MAX_VERTICES        (4 * 32768)
+#define MAX_VERTICES        (4 * 65536)
 
 
 struct vertex {
