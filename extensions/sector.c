@@ -33,7 +33,7 @@ inline bool get_block(struct Sector *sector, short x, short z,
 {
     (*block_sector) = sector;
 
-    if (x > 0 && x < 16)
+    if (x >= 0 && x < 16)
         *block_x = x;
     else if (x < 0)
     {
@@ -55,7 +55,7 @@ inline bool get_block(struct Sector *sector, short x, short z,
     }
 
 
-    if (z > 0 && z < 16)
+    if (z >= 0 && z < 16)
         *block_z = z;
     else if (z < 0)
     {
@@ -256,7 +256,7 @@ unsigned int sector_count_faces(struct Sector *sector)
 }
 
 
-void get_sector_coords(int *x, int *y, int *z, int *cx, int *cz)
+inline void get_sector_coords(int *x, int *y, int *z, int *cx, int *cz)
 {
     *cx = (*x) >> 4;
     *cz = (*z) >> 4;
