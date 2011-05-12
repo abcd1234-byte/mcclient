@@ -52,10 +52,10 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
         if (type == 2)
         {
-            colors[0].r = colors[0].b = 0;
-            colors[1].r = colors[1].b = 0;
-            colors[2].r = colors[2].b = 0;
-            colors[3].r = colors[3].b = 0;
+            colors[3].r *= 0.6;
+            colors[0].r = colors[1].r = colors[2].r = colors[3].r;
+            colors[3].b *= 0.4;
+            colors[0].b = colors[1].b = colors[2].b = colors[3].b;
         }
         else
         {
