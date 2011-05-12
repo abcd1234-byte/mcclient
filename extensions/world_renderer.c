@@ -96,7 +96,7 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     unsigned char orientation = 0;
     unsigned char uv[2] = {0, 0};
 
-    static const float lightlevels[] = {.04398046511104, .0549755813888,
+    static const float lightlevels[] = {0.0351843720888, .04398046511104, .0549755813888,
                                         .068719476736, .08589934592, .1073741824,
                                         .134217728, .16777216, .2097152, .262144,
                                         .32768, .4096, .512, .64, .8, 1};
@@ -121,7 +121,9 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     y2 = y + ny;
     if (0 <= y2 && y <= 127 && get_block(sector, x + nx, z + nz, &light_sector, &x2, &z2))
     {
-        float color_value = lightlevels[light_sector->lighting[x2][z2][y2]];
+        unsigned char llevel1 = light_sector->lighting[x2][z2][y2] & 0x0F;
+        unsigned char llevel2 = (light_sector->lighting[x2][z2][y2] >> 4);
+        float color_value = lightlevels[(llevel1 > llevel2) ? llevel1 : llevel2];
         colors[0].r = colors[0].g = colors[0].b = color_value;
         colors[1].r = colors[1].g = colors[1].b = color_value;
         colors[2].r = colors[2].g = colors[2].b = color_value;

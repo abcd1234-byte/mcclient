@@ -109,6 +109,7 @@ void sector_set_chunk(struct Sector *sector,
     // TODO: optimize
     const unsigned char *metadata = data + (size_x * size_y * size_z);
     const unsigned char *lighting = data + (size_x * size_y * size_z) * 3 / 2;
+    const unsigned char *lighting2 = data + (size_x * size_y * size_z) * 2;
     for (unsigned short x=0; x < size_x; x++)
     {
         for (unsigned short z=0; z < size_z; z++)
@@ -123,11 +124,13 @@ void sector_set_chunk(struct Sector *sector,
                 {
                     sector->blockdata[ox + x][oz + z][oy + y] = metadata[index / 2] >> 4;
                     sector->lighting[ox + x][oz + z][oy + y] = lighting[index / 2] >> 4;
+                    sector->lighting[ox + x][oz + z][oy + y] |= lighting2[index / 2] & 0xF0;
                 }
                 else
                 {
-                    sector->blockdata[ox + x][oz + z][oy + y] = metadata[index / 2] & 15;
-                    sector->lighting[ox + x][oz + z][oy + y] = lighting[index / 2] & 15;
+                    sector->blockdata[ox + x][oz + z][oy + y] = metadata[index / 2] & 0x0F;
+                    sector->lighting[ox + x][oz + z][oy + y] = lighting[index / 2] & 0x0F;
+                    sector->lighting[ox + x][oz + z][oy + y] |= (lighting2[index / 2] & 0x0F) << 4;
                 }
             }
         }
