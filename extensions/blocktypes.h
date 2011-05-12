@@ -8,9 +8,11 @@
 #define     BLOCKTYPE_FLAG_USABLE       2
 #define     BLOCKTYPE_FLAG_TRANSPARENT  4
 #define     BLOCKTYPE_FLAG_NONSOLID     8
+#define     BLOCKTYPE_FLAG_ALLFACES     16
 
 typedef bool (*TextureFunc) (unsigned short x, unsigned short y, unsigned short z,
                              struct Sector *sector, unsigned char face,
+                             struct vertex *vertices,
                              struct uv *texcoords, struct color *colors);
 
 struct BlockType {

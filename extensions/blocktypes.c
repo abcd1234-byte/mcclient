@@ -12,9 +12,9 @@ float uvcorners[8][2] = {{0, 1./16.}, {1./16., 1./16}, {1./16., 0}, {0, 0},
 
 bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
                    struct Sector *sector, unsigned char face,
+                   struct vertex *vertices,
                    struct uv *texcoords, struct color *colors)
 {
-    //TODO
     float u, v;
     unsigned char type = sector->blocktypes[x][z][y];
     if (face == BOTTOM)
@@ -37,7 +37,6 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
     }
     else if (face == TOP)
     {
-        //TODO: (0, 0) + color
         texcoords[0].u = uvcorners[0][0];
         texcoords[0].v = 15 / 16. + uvcorners[0][1];
 
@@ -59,6 +58,7 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
         }
         else
         {
+            //TODO: do better
             colors[0].r *= 2;
             colors[0].g *= 2;
             colors[0].b *= 2;
@@ -68,7 +68,6 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
     }
     else
     {
-        //TODO: blocktypes[type].texcoords
         u = blocktypes[type].texcoords.u;
         v = blocktypes[type].texcoords.v;
 
@@ -90,11 +89,12 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
                   struct Sector *sector, unsigned char face,
+                  struct vertex *vertices,
                   struct uv *texcoords, struct color *colors)
 {
-    //TODO
     float u, v;
     unsigned char type = sector->blocktypes[x][z][y];
+
     if (face == BOTTOM || face == TOP)
     {
         u = blocktypes[type].texcoords.u + 1;
@@ -114,9 +114,20 @@ bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
     }
     else
     {
-        //TODO: check wood type
-        u = blocktypes[type].texcoords.u;
-        v = blocktypes[type].texcoords.v;
+        switch (sector->blockdata[x][z][y])
+        {
+            case 0:
+                u = blocktypes[type].texcoords.u;
+                v = blocktypes[type].texcoords.v;
+                break;
+            case 1:
+                u = 4; v = 7; break;
+            case 2:
+                u = 5; v = 7; break;
+            default:
+                u = blocktypes[type].texcoords.u;
+                v = blocktypes[type].texcoords.v;
+        }
 
         texcoords[0].u = u / 16. + uvcorners[0][0];
         texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
@@ -137,15 +148,26 @@ bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool leaves_texfunc(unsigned short x, unsigned short y, unsigned short z,
                     struct Sector *sector, unsigned char face,
+                    struct vertex *vertices,
                     struct uv *texcoords, struct color *colors)
 {
-    //TODO
     float u, v;
     unsigned char type = sector->blocktypes[x][z][y];
 
-    //TODO: switch with type
-    u = blocktypes[type].texcoords.u;
-    v = blocktypes[type].texcoords.v;
+    switch (sector->blockdata[x][z][y] & 0x3)
+    {
+        case 0:
+            u = blocktypes[type].texcoords.u;
+            v = blocktypes[type].texcoords.v;
+            break;
+        case 1:
+            u = 5; v = 8; break;
+        case 2:
+            u = 4; v = 8; break;
+        default:
+            u = blocktypes[type].texcoords.u;
+            v = blocktypes[type].texcoords.v;
+    }
 
     texcoords[0].u = u / 16. + uvcorners[0][0];
     texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
@@ -159,7 +181,6 @@ bool leaves_texfunc(unsigned short x, unsigned short y, unsigned short z,
     texcoords[3].u = u / 16. + uvcorners[3][0];
     texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
 
-    //TODO: switch with type and decay
     colors[0].r = colors[0].b = 0;
     colors[1].r = colors[1].b = 0;
     colors[2].r = colors[2].b = 0;
@@ -171,6 +192,7 @@ bool leaves_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool dispenser_texfunc(unsigned short x, unsigned short y, unsigned short z,
                        struct Sector *sector, unsigned char face,
+                       struct vertex *vertices,
                        struct uv *texcoords, struct color *colors)
 {
     float u, v;
@@ -210,18 +232,27 @@ bool dispenser_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool bed_texfunc(unsigned short x, unsigned short y, unsigned short z,
                  struct Sector *sector, unsigned char face,
+                 struct vertex *vertices,
                  struct uv *texcoords, struct color *colors)
 {
     float u, v;
-    unsigned char type = sector->blocktypes[x][z][y];
-    unsigned char orientation_to_face[] = {WEST, NORTH, EAST, SOUTH};
+    static const unsigned char orientation_to_face[] = {WEST, NORTH, EAST, SOUTH};
+    static const unsigned char right_directions[] = {SOUTH, WEST, NORTH, EAST};
     unsigned char orientation;
+    bool mirror = false;
 
     orientation = sector->blockdata[x][z][y] & 7;
 
-    if (face == TOP || face == BOTTOM)
+    if (face == BOTTOM)
+        return false;
+
+    vertices[0].y -= .5;
+    vertices[1].y -= .5;
+    vertices[2].y -= .5;
+    vertices[3].y -= .5;
+
+    if (face == TOP)
     {
-        //TODO: check check check
         if (sector->blockdata[x][z][y] & 8) // Head
         {
             u = 7;
@@ -241,34 +272,55 @@ bool bed_texfunc(unsigned short x, unsigned short y, unsigned short z,
         {
             if (orientation_to_face[orientation] == face)
                 u = 8;
+            else if (orientation_to_face[(orientation + 2) % 4] == face)
+                return false;
             else
+            {
+                if (right_directions[orientation] != face)
+                    mirror = true;
                 u = 7;
+            }
             v = 9;
-            //TODO: orientation
         }
         else
         {
             if (orientation_to_face[(orientation + 2) % 4] == face)
                 u = 5;
+            else if (orientation_to_face[orientation] == face)
+                return false;
             else
+            {
+                if (right_directions[orientation] != face)
+                    mirror = true;
                 u = 6;
+            }
             v = 9;
-            //TODO: orientation
         }
         orientation = 0;
-        //TODO: unused faces (between the two blocks, and under the two blocks)
     }
 
-    texcoords[0].u = u / 16. + uvcorners[orientation][0];
+    if (mirror)
+        texcoords[0].u = u / 16. + 1 / 15. - uvcorners[orientation][0];
+    else
+        texcoords[0].u = u / 16. + uvcorners[orientation][0];
     texcoords[0].v = (15 - v) / 16. + uvcorners[orientation][1];
 
-    texcoords[1].u = u / 16. + uvcorners[orientation + 1][0];
+    if (mirror)
+        texcoords[1].u = u / 16. + 1 / 15. - uvcorners[orientation + 1][0];
+    else
+        texcoords[1].u = u / 16. + uvcorners[orientation + 1][0];
     texcoords[1].v = (15 - v) / 16. + uvcorners[orientation + 1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[orientation + 2][0];
+    if (mirror)
+        texcoords[2].u = u / 16. + 1 / 15. - uvcorners[orientation + 2][0];
+    else
+        texcoords[2].u = u / 16. + uvcorners[orientation + 2][0];
     texcoords[2].v = (15 - v) / 16. + uvcorners[orientation + 2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[orientation + 3][0];
+    if (mirror)
+        texcoords[3].u = u / 16. + 1 / 15. - uvcorners[orientation + 3][0];
+    else
+        texcoords[3].u = u / 16. + uvcorners[orientation + 3][0];
     texcoords[3].v = (15 - v) / 16. + uvcorners[orientation + 3][1];
 
     return true;
@@ -277,6 +329,7 @@ bool bed_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool wool_texfunc(unsigned short x, unsigned short y, unsigned short z,
                   struct Sector *sector, unsigned char face,
+                  struct vertex *vertices,
                   struct uv *texcoords, struct color *colors)
 {
     float u, v;
@@ -292,7 +345,30 @@ bool wool_texfunc(unsigned short x, unsigned short y, unsigned short z,
             u = 2; v = 12; break;
         case 3: // Light blue
             u = 2; v = 11; break;
-        //TODO: the over types...
+        case 4: // Yellow
+            u = 2; v = 10; break;
+        case 5: // Light green
+            u = 2; v = 9; break;
+        case 6: // Pink
+            u = 2; v = 8; break;
+        case 7: // Gray
+            u = 2; v = 7; break;
+        case 8: // Light Gray
+            u = 1; v = 14; break;
+        case 9: // Cyan
+            u = 1; v = 13; break;
+        case 10: // Purple
+            u = 1; v = 12; break;
+        case 11: // Blue
+            u = 1; v = 11; break;
+        case 12: // Brown
+            u = 1; v = 10; break;
+        case 13: // Dark Green
+            u = 1; v = 9; break;
+        case 14: // Red
+            u = 1; v = 8; break;
+        case 15: // Black
+            u = 1; v = 7; break;
         default:
             u = 0; v = 4;
     }
@@ -315,6 +391,7 @@ bool wool_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool bookshelf_texfunc(unsigned short x, unsigned short y, unsigned short z,
                        struct Sector *sector, unsigned char face,
+                       struct vertex *vertices,
                        struct uv *texcoords, struct color *colors)
 {
     float u, v;
@@ -349,9 +426,11 @@ bool bookshelf_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool crafting_table_texfunc(unsigned short x, unsigned short y, unsigned short z,
                             struct Sector *sector, unsigned char face,
+                            struct vertex *vertices,
                             struct uv *texcoords, struct color *colors)
 {
     float u, v;
+    static const unsigned char foo[] = {[EAST] = 1, [WEST] = 1, [NORTH] = 0, [SOUTH] = 0};
 
     if (face == TOP)
     {
@@ -365,7 +444,7 @@ bool crafting_table_texfunc(unsigned short x, unsigned short y, unsigned short z
     }
     else
     {
-        u = 11 + 0; //TODO: 11-12
+        u = 11 + foo[face];
         v = 3;
     }
 
@@ -387,8 +466,10 @@ bool crafting_table_texfunc(unsigned short x, unsigned short y, unsigned short z
 
 bool seeds_texfunc(unsigned short x, unsigned short y, unsigned short z,
                    struct Sector *sector, unsigned char face,
+                   struct vertex *vertices,
                    struct uv *texcoords, struct color *colors)
 {
+    //TODO: check
     float u, v;
 
     if (face == TOP || face == BOTTOM)
@@ -419,6 +500,7 @@ bool seeds_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool pumpkin_texfunc(unsigned short x, unsigned short y, unsigned short z,
                      struct Sector *sector, unsigned char face,
+                     struct vertex *vertices,
                      struct uv *texcoords, struct color *colors)
 {
     //TODO: check
@@ -504,11 +586,11 @@ struct BlockType blocktypes[256] = {
             .texcoords = {2, 2}},
     [17] = {.name = "wood",
             .texcoords = {4, 1},
-            .texfunc = wood_texfunc}, //TODO: switch based on type
+            .texfunc = wood_texfunc},
     [18] = {.name = "leaves",
-            .flags = BLOCKTYPE_FLAG_TRANSPARENT,
+            .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_ALLFACES,
             .texcoords = {4, 3},
-            .texfunc = leaves_texfunc}, //TODO: switch based on type and decay
+            .texfunc = leaves_texfunc},
     [20] = {.name = "glass",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {1, 3}},

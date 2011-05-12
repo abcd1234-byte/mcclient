@@ -147,7 +147,7 @@ static inline void _sector_compute_block_faces(struct Sector *sector, short x, s
 
     if (blocktype != 0)
     {
-        if (blocktypes[blocktype].flags & BLOCKTYPE_FLAG_NONBLOCK)
+        if (blocktypes[blocktype].flags & (BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_ALLFACES))
         {
             sector->blockfaces[x][z][y] = FACE_SOUTH | FACE_TOP | FACE_WEST | FACE_NORTH | FACE_BOTTOM | FACE_EAST;
         }

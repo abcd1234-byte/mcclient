@@ -130,6 +130,11 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
         colors[3].r = colors[3].g = colors[3].b = color_value;
     }
 
+    vertices[3] = faces[face][0];
+    vertices[2] = faces[face][1];
+    vertices[1] = faces[face][2];
+    vertices[0] = faces[face][3];
+
     // Annoying texture calculation
     if (blocktypes[sector->blocktypes[x][z][y]].texfunc == NULL)
     {
@@ -158,17 +163,12 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     else
     {
         if (!blocktypes[sector->blocktypes[x][z][y]].texfunc(x, y, z, sector,
-                                                             face,
+                                                             face, vertices,
                                                              texcoords, colors))
             return;
     }
 
     *nb_vertices += 4;
-
-    vertices[3] = faces[face][0];
-    vertices[2] = faces[face][1];
-    vertices[1] = faces[face][2];
-    vertices[0] = faces[face][3];
 
     vertices[0].x += abs_x; vertices[0].y += abs_y; vertices[0].z += abs_z;
     vertices[1].x += abs_x; vertices[1].y += abs_y; vertices[1].z += abs_z;
