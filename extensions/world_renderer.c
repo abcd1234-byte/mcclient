@@ -437,3 +437,82 @@ void world_renderer_render_sector(struct WorldRenderer *world_renderer,
                                          0, 16, left_to_test, 0, cy * 16, 0);
     }
 }
+
+
+struct SortItem {
+    float distance2;
+    unsigned int index;
+};
+
+
+int sort_item_comparison(const void *a, const void *b)
+{
+    const struct SortItem *item1, *item2;
+    item1 = (struct SortItem *) a;
+    item2 = (struct SortItem *) b;
+
+    if (item1->distance2 > item2->distance2)
+        return -1;
+    else if (item1->distance2 < item2->distance2)
+        return 1;
+    return 0;
+}
+
+
+void sort_alpha_faces(struct WorldRenderer *world_renderer,
+                      struct ViewContext *view_context)
+{
+    struct SortItem *items;
+
+    // 1. Build distances list
+    items = malloc(sizeof(struct SortItem) * world_renderer->nb_alpha_vertices);
+    for (unsigned int i=0; i < world_renderer->nb_alpha_vertices / 4; i++)
+    {
+        float distance2_min = -1;
+        for (unsigned int j=0; j < 4; j++)
+        {
+            struct vertex vertex;
+            float dx, dy, dz;
+            float distance2;
+            vertex = world_renderer->vertices[MAX_VERTICES + (i * 4 + j)];
+            dx = vertex.x - view_context->x;
+            dy = vertex.y - view_context->y;
+            dz = vertex.z - view_context->z;
+            distance2 = dx * dx + dy * dy + dz * dz;
+            if (distance2_min < 0 || distance2 < distance2_min)
+                distance2_min = distance2;
+        }
+        items[i].index = i;
+        items[i].distance2 = distance2_min;
+    }
+
+    // 2. Sort indices
+    qsort(items, world_renderer->nb_alpha_vertices / 4, sizeof(struct SortItem),
+          sort_item_comparison);
+
+    // 3. Reconstruct array
+    struct vertex *vertices = malloc(sizeof(struct vertex) * world_renderer->nb_alpha_vertices);
+    struct color *colors = malloc(sizeof(struct color) * world_renderer->nb_alpha_vertices);
+    struct uv *texcoords = malloc(sizeof(struct uv) * world_renderer->nb_alpha_vertices);
+
+    memcpy(vertices, world_renderer->vertices + MAX_VERTICES, sizeof(struct vertex) * world_renderer->nb_alpha_vertices);
+    memcpy(colors, world_renderer->colors + MAX_VERTICES, sizeof(struct color) * world_renderer->nb_alpha_vertices);
+    memcpy(texcoords, world_renderer->texcoords + MAX_VERTICES, sizeof(struct uv) * world_renderer->nb_alpha_vertices);
+
+    for (unsigned int i=0; i < world_renderer->nb_alpha_vertices / 4; i++)
+    {
+        memcpy(world_renderer->vertices + MAX_VERTICES + i * 4,
+               vertices + items[i].index * 4, 4 * sizeof(struct vertex));
+        memcpy(world_renderer->colors + MAX_VERTICES + i * 4,
+               colors + items[i].index * 4, 4 * sizeof(struct color));
+        memcpy(world_renderer->texcoords + MAX_VERTICES + i * 4,
+               texcoords + items[i].index * 4, 4 * sizeof(struct uv));
+    }
+
+    // 4. Cleanup
+    free(vertices);
+    free(colors);
+    free(texcoords);
+    free(items);
+}
+

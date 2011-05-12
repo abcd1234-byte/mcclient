@@ -95,6 +95,8 @@ static PyObject *WorldRenderer_render(WorldRenderer *self, PyObject *args)
         Py_DECREF(item);
     }
 
+    sort_alpha_faces(self->world_renderer, &view_context);
+
     memcpy(self->world_renderer->vertices + self->world_renderer->nb_vertices,
            self->world_renderer->vertices + MAX_VERTICES,
            sizeof(struct vertex) * self->world_renderer->nb_alpha_vertices);

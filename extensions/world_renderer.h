@@ -45,5 +45,6 @@ struct WorldRenderer *world_renderer_new(void);
 void world_renderer_reset_rendering(struct WorldRenderer *world_renderer);
 void world_renderer_render_sector(struct WorldRenderer *world_renderer, struct Sector *sector, struct ViewContext *view_context);
 struct Sector *world_renderer_get_sector(struct WorldRenderer *world_renderer, int cx, int cz);
+void sort_alpha_faces(struct WorldRenderer *world_renderer, struct ViewContext *view_context);
 
 #endif
