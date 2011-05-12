@@ -95,12 +95,14 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     short x2, y2, z2;
     unsigned char orientation = 0;
     unsigned char uv[2] = {0, 0};
-    float lightlevels[] = {.04398046511104, .0549755813888, .068719476736,
-                           .08589934592, .1073741824, .134217728, .16777216,
-                           .2097152, .262144, .32768, .4096, .512, .64, .8, 1};
+
+    static const float lightlevels[] = {.04398046511104, .0549755813888,
+                                        .068719476736, .08589934592, .1073741824,
+                                        .134217728, .16777216, .2097152, .262144,
+                                        .32768, .4096, .512, .64, .8, 1};
 
 
-    struct vertex faces[6][4] = {
+    static const struct vertex faces[6][4] = {
         [BOTTOM] = {CORNER_A, CORNER_E, CORNER_H, CORNER_D},
         [TOP] = {CORNER_B, CORNER_C, CORNER_G, CORNER_F},
         [EAST] = {CORNER_A, CORNER_D, CORNER_C, CORNER_B},
@@ -113,6 +115,18 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     // Safety net:
     if ((*nb_vertices) == MAX_VERTICES)
         return;
+
+    // (Bottleneck #2 is OpenGL/PyOpenGL, VBO and interlaced buffers might help)
+    // Color (lighting) calculation:
+    y2 = y + ny;
+    if (0 <= y2 && y <= 127 && get_block(sector, x + nx, z + nz, &light_sector, &x2, &z2))
+    {
+        float color_value = lightlevels[light_sector->lighting[x2][z2][y2]];
+        colors[0].r = colors[0].g = colors[0].b = color_value;
+        colors[1].r = colors[1].g = colors[1].b = color_value;
+        colors[2].r = colors[2].g = colors[2].b = color_value;
+        colors[3].r = colors[3].g = colors[3].b = color_value;
+    }
 
     // Annoying texture calculation
     if (blocktypes[sector->blocktypes[x][z][y]].texfunc == NULL)
@@ -158,18 +172,6 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     vertices[1].x += abs_x; vertices[1].y += abs_y; vertices[1].z += abs_z;
     vertices[2].x += abs_x; vertices[2].y += abs_y; vertices[2].z += abs_z;
     vertices[3].x += abs_x; vertices[3].y += abs_y; vertices[3].z += abs_z;
-
-    // (Bottleneck #2 is OpenGL/PyOpenGL, VBO and interlaced buffers might help)
-    // Color (lighting) calculation:
-    y2 = y + ny;
-    if (0 <= y2 && y <= 127 && get_block(sector, x + nx, z + nz, &light_sector, &x2, &z2))
-    {
-        float color_value = lightlevels[light_sector->lighting[x2][z2][y2]];
-        colors[0].r = colors[0].g = colors[0].b = color_value;
-        colors[1].r = colors[1].g = colors[1].b = color_value;
-        colors[2].r = colors[2].g = colors[2].b = color_value;
-        colors[3].r = colors[3].g = colors[3].b = color_value;
-    }
 }
 
 
@@ -270,8 +272,8 @@ void world_renderer_render_octree_notest(struct WorldRenderer *world_renderer,
                                          unsigned short idx, unsigned short size,
                                          unsigned short x, unsigned short y, unsigned short z)
 {
-    unsigned char dirs[8][3] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1},
-                                {1, 1, 0}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
+    static const unsigned char dirs[8][3] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1},
+                                             {1, 1, 0}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
     int x2, y2, z2;
     size >>= 1;
     if (size == 1)
@@ -313,8 +315,8 @@ void world_renderer_render_octree(struct WorldRenderer *world_renderer,
                                   unsigned char left_to_test,
                                   unsigned short x, unsigned short y, unsigned short z)
 {
-    unsigned char dirs[8][3] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1},
-                                {1, 1, 0}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
+    static const unsigned char dirs[8][3] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1},
+                                             {1, 1, 0}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
     int x2, y2, z2;
     size >>= 1;
     if (size == 1)

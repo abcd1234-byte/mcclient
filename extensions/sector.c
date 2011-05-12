@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "sector.h"
 #include "blocktypes.h"
 
@@ -32,46 +34,51 @@ inline bool get_block(struct Sector *sector, short x, short z,
                       short *block_x, short *block_z)
 {
     (*block_sector) = sector;
+    *block_z = z;
+    *block_x = x;
 
-    if (x >= 0 && x < 16)
-        *block_x = x;
-    else if (x < 0)
+    if (x >= 0 && x < 16 && z >= 0 && z < 16)
+        return true;
+
+    if (x < 0)
     {
-        if (x >= -16 && (*block_sector)->north != NULL)
+        assert(x >= -16);
+        if ((*block_sector)->north != NULL)
         {
             *block_sector = (*block_sector)->north;
-            *block_x = x + 16;
+            *block_x += 16;
         }
         else return false;
     }
-    else
+    else if (x > 15)
     {
-        if (x < 32 && (*block_sector)->south != NULL)
+        assert(x < 32);
+        if ((*block_sector)->south != NULL)
         {
             *block_sector = (*block_sector)->south;
-            *block_x = x - 16;
+            *block_x -= 16;
         }
         else return false;
     }
 
 
-    if (z >= 0 && z < 16)
-        *block_z = z;
-    else if (z < 0)
+    if (z < 0)
     {
-        if (z >= -16 && (*block_sector)->east != NULL)
+        assert(z >= -16);
+        if ((*block_sector)->east != NULL)
         {
             *block_sector = (*block_sector)->east;
-            *block_z = z + 16;
+            *block_z += 16;
         }
         else return false;
     }
-    else
+    else if (z > 15)
     {
-        if (z < 32 && (*block_sector)->west != NULL)
+        assert(z < 32);
+        if ((*block_sector)->west != NULL)
         {
             *block_sector = (*block_sector)->west;
-            *block_z = z - 16;
+            *block_z -= 16;
         }
         else return false;
     }
