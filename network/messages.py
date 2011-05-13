@@ -170,7 +170,7 @@ class UpdateHealth(object):
 
     @classmethod
     def get(cls, reader):
-        return cls(*struct.unpack('!H', reader.read(2)))
+        return cls(*struct.unpack('!h', reader.read(2)))
 
 
 @register

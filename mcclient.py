@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
 
     world = World()
-    con  = Connection('Bot')
+    con  = Connection('Bot2')
     con.connect('localhost')
     messages.KeepAlive().send(con.socket)
 
