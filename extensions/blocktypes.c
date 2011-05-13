@@ -662,6 +662,7 @@ struct BlockType blocktypes[256] = {
             .texcoords = {5, 2}},
     [50] = {.name = "torch",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
+            .texcoords = {0, 5},
             .texfunc = NULL}, //TODO
     [51] = {.name = "fire",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,

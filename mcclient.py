@@ -53,8 +53,8 @@ if __name__ == '__main__':
     glLoadIdentity()
     gluPerspective(60, 800./600., 0.1, 128)
 
-#    pygame.event.set_grab(True)
-#    pygame.mouse.set_visible(False)
+    pygame.event.set_grab(True)
+    pygame.mouse.set_visible(False)
 
     truc = loadImage('mcdata/terrain.png')
 
@@ -70,7 +70,12 @@ if __name__ == '__main__':
 
     quit = False
 
+    old_time = time()
     while con.socket and not quit:
+        new_time = time()
+        delta = (new_time - old_time) / 1000.
+        old_time = new_time
+
         for message in con.get_messages():
             if type(message) == messages.ChatMessage:
                 print('[MSG] %s' % message.message)
@@ -122,17 +127,19 @@ if __name__ == '__main__':
         key_pressed = pygame.key.get_pressed()
         # TODO: Move accordingly
         if key_pressed[pygame.K_z]:
-            message_pos.z += cos(radians(message_pos.yaw)) * .2
-            message_pos.x -= sin(radians(message_pos.yaw)) * .2
-
+            message_pos.z += cos(radians(message_pos.yaw)) * 4000 * delta
+            message_pos.x -= sin(radians(message_pos.yaw)) * 4000 * delta
 
         if not message_pos:
             messages.KeepAlive().send(con.socket)
         else:
+            message_pos.pitch = max(-90, min(90, message_pos.pitch))
+
             message_pos.send(con.socket)
 
             pos = message_pos.x, message_pos.stance, message_pos.z
             nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 80, message_pos.yaw, message_pos.pitch)
+#            print('Nb faces drawn: %d' % (nb_vertices // 4))
 
             glClearColor(0.0, 0.0, 1.0, 0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
