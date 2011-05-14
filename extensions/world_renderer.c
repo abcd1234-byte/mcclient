@@ -149,7 +149,7 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     vertices[0] = faces[face][3];
 
     // Annoying texture calculation
-    if (blocktypes[sector->blocktypes[x][z][y]].texfunc == NULL)
+    if (blocktypes[sector->blocktypes[x][z][y]].func.texfunc == NULL)
     {
         uv[0] = blocktypes[sector->blocktypes[x][z][y]].texcoords.u;
         uv[1] = blocktypes[sector->blocktypes[x][z][y]].texcoords.v;
@@ -175,9 +175,9 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     }
     else
     {
-        if (!blocktypes[sector->blocktypes[x][z][y]].texfunc(x, y, z, sector,
-                                                             face, vertices,
-                                                             texcoords, colors))
+        if (!blocktypes[sector->blocktypes[x][z][y]].func.texfunc(x, y, z, sector,
+                                                                  face, vertices,
+                                                                  texcoords, colors))
             return;
     }
 
@@ -230,6 +230,14 @@ inline static void world_renderer_render_block(struct WorldRenderer *world_rende
     int abs_x, abs_z;
     double dir_x, dir_y, dir_z;
     unsigned char faces = sector->blockfaces[x][z][y];
+    struct BlockType type = blocktypes[sector->blocktypes[x][z][y]];
+
+    if (type.flags & BLOCKTYPE_FLAG_NONBLOCK && type.func.drawfunc != NULL)
+    {
+        type.func.drawfunc(world_renderer, sector, view_context, x, y, z);
+        return;
+    }
+
     struct Vec3D southwesttop = CORNER_G;
     struct Vec3D northeastbottom = CORNER_A;
 

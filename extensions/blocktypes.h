@@ -27,6 +27,10 @@ typedef bool (*TextureFunc) (unsigned short x, unsigned short y, unsigned short 
                              struct Sector *sector, unsigned char face,
                              struct vertex *vertices,
                              struct uv *texcoords, struct color *colors);
+typedef bool (*DrawFunc) (struct WorldRenderer *world_renderer,
+                          struct Sector *sector,
+                          struct ViewContext *view_context,
+                          unsigned short x, unsigned short y, unsigned short z);
 
 struct BlockType {
     const char *name;
@@ -35,7 +39,10 @@ struct BlockType {
         unsigned char u;
         unsigned char v;
     } texcoords;
-    TextureFunc texfunc; //TODO: union for non-block blocks
+    union {
+        TextureFunc texfunc; //TODO: union for non-block blocks
+        DrawFunc    drawfunc;
+    } func;
 };
 
 extern struct BlockType blocktypes[256];
