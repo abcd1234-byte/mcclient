@@ -17,9 +17,6 @@
 #include "sector_py.h"
 
 
-static PyTypeObject SectorType;
-
-
 static void Sector_dealloc(Sector *self)
 {
     if (self->sector->east != NULL && self->sector->east->west == self->sector)
@@ -202,9 +199,9 @@ static PyMethodDef Sector_methods[] = {
 
 
 
-static PyTypeObject SectorType = {
+PyTypeObject SectorType = {
     PyObject_HEAD_INIT(NULL)
-    .tp_name = "sector.Sector",
+    .tp_name = "cmcclient.Sector",
     .tp_basicsize = sizeof(Sector),
     .tp_dealloc = (destructor) Sector_dealloc,
     .tp_methods = Sector_methods,
@@ -214,29 +211,3 @@ static PyTypeObject SectorType = {
     .tp_new = Sector_new,
 };
 
-
-
-static PyMethodDef module_methods[] = {
-    {NULL}  /* Sentinel */
-};
-
-#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-PyMODINIT_FUNC
-initsector(void) 
-{
-    PyObject* m;
-
-    if (PyType_Ready(&SectorType) < 0)
-        return;
-
-    m = Py_InitModule3("sector", module_methods,
-                       "TODO");
-
-    if (m == NULL)
-      return;
-
-    Py_INCREF(&SectorType);
-    PyModule_AddObject(m, "Sector", (PyObject *)&SectorType);
-}

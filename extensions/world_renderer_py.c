@@ -14,6 +14,7 @@
 #include <Python.h>
 
 #include "world_renderer.h"
+#include "world_renderer_py.h"
 #include "sector_py.h"
 
 #include "frustum.h"
@@ -183,9 +184,9 @@ static PyGetSetDef WorldRenderer_getseters[] = {
 };
 
 
-static PyTypeObject WorldRendererType = {
+PyTypeObject WorldRendererType = {
     PyObject_HEAD_INIT(NULL)
-    .tp_name = "worldrenderer.WorldRenderer",
+    .tp_name = "cmcclient.WorldRenderer",
     .tp_basicsize = sizeof(WorldRenderer),
     .tp_dealloc = (destructor) WorldRenderer_dealloc,
     .tp_methods = WorldRenderer_methods,
@@ -196,29 +197,3 @@ static PyTypeObject WorldRendererType = {
     .tp_getset = WorldRenderer_getseters,
 };
 
-
-
-static PyMethodDef module_methods[] = {
-    {NULL}  /* Sentinel */
-};
-
-#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-PyMODINIT_FUNC
-initworldrenderer(void) 
-{
-    PyObject* m;
-
-    if (PyType_Ready(&WorldRendererType) < 0)
-        return;
-
-    m = Py_InitModule3("worldrenderer", module_methods,
-                       "TODO");
-
-    if (m == NULL)
-      return;
-
-    Py_INCREF(&WorldRendererType);
-    PyModule_AddObject(m, "WorldRenderer", (PyObject *)&WorldRendererType);
-}

@@ -14,9 +14,8 @@
 
 
 import zlib
-from sector import Sector as CSector
 from time import time
-from worldrenderer import WorldRenderer
+from cmcclient import WorldRenderer, Sector as CSector
 
 
 
@@ -60,9 +59,11 @@ class World(object):
     def modify_block(self, x, y, z, type, metadata):
         cx, cz, ox, oy, oz = self.get_block_coords(x, y, z)
         try:
-            self.csectors[cx, cz].set_block(ox, oy, oz, type, metadata)
+            sector = self.csectors[cx, cz]
         except KeyError:
-            pass
+            self.allocate_sector(cx, cz)
+            sector = self.csectors[cx, cz]
+        sector.set_block(ox, oy, oz, type, metadata)
 
 
     def get_gl_faces(self, pos, fov, ratio, znear, zfar, yaw, pitch):
