@@ -14,6 +14,8 @@
 #include <Python.h>
 
 #include "sector.h"
+
+#include "block_py.h"
 #include "sector_py.h"
 
 
@@ -140,36 +142,31 @@ static PyObject *Sector_set_block(Sector *self, PyObject *args)
 }
 
 
-static PyObject *Sector_get_block_type(Sector *self, PyObject *args)
+static PyObject *Sector_get_block(Sector *self, PyObject *args)
 {
-    int x = 0, y = 0, z = 0;
+    unsigned short x, y, z;
+    PyObject *arglist = NULL;
+    PyObject *result = NULL;
 
-    if (!PyArg_ParseTuple(args, "iii", &x, &y, &z))
+    if (!PyArg_ParseTuple(args, "hhh", &x, &y, &z))
         return NULL;
 
-    return PyInt_FromLong(self->sector->blocktypes[x][z][y]);
-}
+    if (x >= 0 && x < 16 && y >= 0 && y < 128 && z >= 0 && z < 16)
+    {
+        arglist = Py_BuildValue("hhhh", self->sector->blocktypes[x][z][y],
+                                        self->sector->blockdata[x][z][y],
+                                        self->sector->lighting[x][z][y] >> 4,
+                                        self->sector->lighting[x][z][y] & 0x0F);
+        result = PyObject_CallObject((PyObject *) &BlockType, arglist);
+        Py_DECREF(arglist);
 
-
-static PyObject *Sector_get_block_data(Sector *self, PyObject *args)
-{
-    int x = 0, y = 0, z = 0;
-
-    if (!PyArg_ParseTuple(args, "iii", &x, &y, &z))
+        return result;
+    }
+    else
+    {
+        PyErr_SetString(PyExc_IndexError, "block index out of range");
         return NULL;
-
-    return PyInt_FromLong(self->sector->blockdata[x][z][y]);
-}
-
-
-static PyObject *Sector_get_block_lighting(Sector *self, PyObject *args)
-{
-    int x = 0, y = 0, z = 0;
-
-    if (!PyArg_ParseTuple(args, "iii", &x, &y, &z))
-        return NULL;
-
-    return PyInt_FromLong(self->sector->lighting[x][z][y]);
+    }
 }
 
 
@@ -182,18 +179,14 @@ static PyObject *Sector_count_faces(Sector *self)
 static PyMethodDef Sector_methods[] = {
     {"set_chunk", (PyCFunction) Sector_set_chunk, METH_VARARGS,
      "Set data chunk (TODO)."},
-    {"get_block_type", (PyCFunction) Sector_get_block_type, METH_VARARGS,
-     "Get block type (TODO)."},
-    {"get_block_data", (PyCFunction) Sector_get_block_data, METH_VARARGS,
-     "Get block data (TODO)."},
-    {"get_block_lighting", (PyCFunction) Sector_get_block_lighting, METH_VARARGS,
-     "Get block lighting (TODO)."},
     {"set_block", (PyCFunction) Sector_set_block, METH_VARARGS,
      "Set block type and metadata (TODO)."},
     {"count_faces", (PyCFunction) Sector_count_faces, METH_NOARGS,
      "Count number of faces."},
     {"add_neighbour", (PyCFunction) Sector_add_neighbour, METH_VARARGS,
      "Add a neighbour to the sector."},
+    {"get_block", (PyCFunction) Sector_get_block, METH_VARARGS,
+     "Get a given block (in sector coordinates) from the sector."},
     {NULL} // Sentinel
 };
 

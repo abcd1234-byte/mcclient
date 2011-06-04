@@ -13,6 +13,7 @@
 
 #include <Python.h>
 
+#include "block_py.h"
 #include "sector_py.h"
 #include "world_renderer_py.h"
 
@@ -32,6 +33,8 @@ PyMODINIT_FUNC initcmcclient(void)
         return;
     if (PyType_Ready(&SectorType) < 0)
         return;
+    if (PyType_Ready(&BlockType) < 0)
+        return;
 
     m = Py_InitModule3("cmcclient", module_methods,
                        "TODO");
@@ -44,4 +47,7 @@ PyMODINIT_FUNC initcmcclient(void)
 
     Py_INCREF(&SectorType);
     PyModule_AddObject(m, "Sector", (PyObject *) &SectorType);
+
+    Py_INCREF(&BlockType);
+    PyModule_AddObject(m, "Block", (PyObject *) &BlockType);
 }

@@ -121,7 +121,9 @@ void sector_set_chunk(struct Sector *sector,
 {
     // TODO: optimize
     const unsigned char *metadata = data + (size_x * size_y * size_z);
+    // Block light
     const unsigned char *lighting = data + (size_x * size_y * size_z) * 3 / 2;
+    // Sunlight
     const unsigned char *lighting2 = data + (size_x * size_y * size_z) * 2;
     for (unsigned short x=0; x < size_x; x++)
     {
