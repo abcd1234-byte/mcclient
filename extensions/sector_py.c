@@ -51,7 +51,7 @@ static PyObject *Sector_init(Sector *self, PyObject *args, PyObject *kwds)
 {
     int cx, cz;
     if (!PyArg_ParseTuple(args, "ii", &cx, &cz))
-        return NULL;
+        return -1;
 
     self->sector = sector_new(cx, cz);
 
