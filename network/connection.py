@@ -20,7 +20,7 @@ class Connection(object):
         self._buffer.write(self.socket.recv(1024))
         answer = messages.get(BufferReader(self._buffer))
         assert answer.pseudo == '-'
-        login = messages.Login(11, self.name)
+        login = messages.Login(13, self.name)
         login.send(self.socket)
         self._buffer.write(self.socket.recv(1024))
         answer = messages.get(BufferReader(self._buffer))

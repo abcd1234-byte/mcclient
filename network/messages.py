@@ -174,6 +174,21 @@ class UpdateHealth(object):
 
 
 @register
+class Respawn(object):
+    id = 0x09
+
+    def __init__(self, world):
+        self.world = world
+
+    @classmethod
+    def get(cls, reader):
+        return cls(*struct.unpack('!b', reader.read(1)))
+
+    def send(self, socket):
+        socket.write(struct.pack('!Ib', self.id, self.world))
+
+
+@register
 class UseBed(object):
     id = 0x11
 
@@ -212,6 +227,7 @@ class NamedEntitySpawn(object):
 
     def __init__(self, eid, name, x, y, z, rotation, pitch, item):
         self.eid = eid
+        self.name = name
         self.x, self.y, self.z = x, y, z
         self.rotation = rotation
         self.pitch = pitch
@@ -441,15 +457,24 @@ class CollectItem(object):
 class AddObject(object):
     id = 0x17
 
-    def __init__(self, eid, type, x, y, z):
+    def __init__(self, eid, type, x, y, z, unkwn1, unkwn2=0, unkwn3=0, unkwn4=0):
         self.eid = eid
         self.type = type
         self.x, self.y, self.z = x, y, z
+        self.unkwn1 = unkwn1
+        self.unkwn2 = unkwn2
+        self.unkwn3 = unkwn3
+        self.unkwn4 = unkwn4
 
 
     @classmethod
     def get(cls, reader):
-        return cls(*struct.unpack('!IBiii', reader.read(17)))
+        eid, type, x, y, z, unkwn1 = struct.unpack('!IBiiii', reader.read(21))
+        if unkwn1 > 0:
+            unkwn2, unkwn3, unkwn4 = struct.unpack('!hhh', reader.read(6))
+            return cls(eid, type, x, y, z, unkwn1, unkwn2, unkwn3, unkwn4)
+        else:
+            return cls(eid, type, x, y, z, unkwn1)
 
 
 @register
@@ -484,6 +509,24 @@ class EntityRelativeMove(object):
     def get(cls, reader):
         args = struct.unpack('!Ibbb', reader.read(7))
         return cls(*args)
+
+
+
+@register
+class EntityLook(object):
+    id = 0x20
+
+    def __init__(self, eid, yaw, pitch):
+        self.eid = eid
+        self.yaw = yaw
+        self.pitch = pitch
+
+
+    @classmethod
+    def get(cls, reader):
+        args = struct.unpack('!Ibb', reader.read(7))
+        return cls(*args)
+
 
 
 @register
@@ -534,6 +577,19 @@ class Explosion(object):
     def get(cls, reader):
         x, y, z, unknown, count = struct.unpack('!dddfI', reader.read(32))
         return cls(x, y, z, unknown, count, reader.read(3 * count))
+
+
+@register
+class DoorChange(object):
+    id = 0x3d #TODO
+
+    def __init__(self, unknown1, unknown2, unknown3, unknown4, unknown5):
+        pass #TODO
+
+
+    @classmethod
+    def get(cls, reader):
+        return cls(*struct.unpack('!iibii', reader.read(17)))
 
 
 
@@ -634,6 +690,24 @@ class UpdateSign(object):
         args.append(read_string(reader))
         args.append(read_string(reader))
         return cls(*args)
+
+
+@register
+class MapData(object):
+    id = 0x83
+
+    def __init__(self, unknown1, unknown2, length, data):
+        self.unknown1 = unknown1
+        self.unknown2 = unknown2
+        self.length = length
+        self.data = data
+
+
+    @classmethod
+    def get(cls, reader):
+        unknown1, unknown2, length = struct.unpack('!hhb', reader.read(5))
+        data = reader.read(length)
+        return cls(unknown1, unknown2, length, data)
 
 
 @register
