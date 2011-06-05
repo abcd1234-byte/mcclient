@@ -163,58 +163,14 @@ if __name__ == '__main__':
 
         # TODO: check for collision
         if message_pos:
-            # bounding box seems to be around .27 in all directions
-            north = set(world.get_block_coords(message_pos.x - .32, message_pos.y + dy, message_pos.z + dz)
-                        for dy, dz in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
-            south = set(world.get_block_coords(message_pos.x + .32, message_pos.y + dy, message_pos.z + dz)
-                        for dy, dz in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
-            east = set(world.get_block_coords(message_pos.x + dx, message_pos.y + dy, message_pos.z - .32)
-                        for dy, dx in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
-            west = set(world.get_block_coords(message_pos.x + dx, message_pos.y + dy, message_pos.z + .32)
-                        for dy, dx in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
-            under = set(world.get_block_coords(message_pos.x + dx, message_pos.y - .1, message_pos.z + dz)
-                        for dx, dz in [(-.32, 0), (.32, 0), (0, 0), (0, -.32), (0, .32)])
-            over = set(world.get_block_coords(message_pos.x + dx, message_pos.stance, message_pos.z + dz)
-                        for dx, dz in [(-.32, 0), (.32, 0), (0, 0), (0, -.32), (0, .32)])
-            try:
-                north = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in north)
-                south = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in south)
-                east = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in east)
-                west = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in west)
-                under = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in under)
-                over = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in over)
-            except KeyError:
-                pass # At least one block isn't available. Don't do collision test.
+            message_pos.on_ground = True
+            hit_ceiling = world.collide(message_pos)
+            if hit_ceiling:
+                speed_y = min(0, speed_y)
+            if message_pos.on_ground:
+                speed_y = 0
             else:
-                # Bottom
-                # If on ground: set speed to 0!
-                if any(block.solid for block in under):
-                    message_pos.on_ground = True
-                    delta = int(message_pos.y - .1) + 1. - message_pos.y
-                    message_pos.y += delta
-                    message_pos.stance += delta
-                    speed_y = 0
-                else:
-                    message_pos.on_ground = False
-                    speed_y = max(speed_y - delta * 30, -12.)
-                # North
-                if message_pos.x - int(message_pos.x) < .32 and any(block.solid for block in north):
-                    message_pos.x = int(message_pos.x) + .32
-                # South
-                if ceil(message_pos.x) - message_pos.x < .32 and any(block.solid for block in south):
-                    message_pos.x = ceil(message_pos.x) - .32
-                # East
-                if message_pos.z - int(message_pos.z) < .32 and any(block.solid for block in east):
-                    message_pos.z = int(message_pos.z) + .32
-                # West
-                if ceil(message_pos.z) - message_pos.z < .32 and any(block.solid for block in west):
-                    message_pos.z = ceil(message_pos.z) - .32
-                # Top
-                if any(block.solid for block in over):
-                    delta = int(message_pos.y + 2) - 2 - message_pos.y
-                    message_pos.y += delta
-                    message_pos.stance += delta
-                    speed_y = min(speed_y, 0)
+                speed_y = max(speed_y - delta * 30, -12.)
 
         if not message_pos:
             messages.KeepAlive().send(con.socket)
