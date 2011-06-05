@@ -32,7 +32,12 @@ class World(object):
 
 
     def get_block_coords(self, x, y, z):
-        return (x // 16, z // 16, x % 16, y, z % 16)
+        return (x // 16, z // 16, int(x) % 16, int(y), int(z) % 16)
+
+
+    def get_block(self, x, y, z):
+        cx, cz, ox, oy, oz = self.get_block_coords(x, y, z)
+        return self.csectors[cx, cz].get_block(ox, oy, oz)
 
 
     def allocate_sector(self, cx, cz):
