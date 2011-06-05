@@ -21,7 +21,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from ctypes import c_float
 from struct import pack
-from math import cos, sin, radians
+from math import cos, sin, radians, ceil
 
 
 from time import time
@@ -74,13 +74,13 @@ if __name__ == '__main__':
 
     truc = loadImage('mcdata/terrain.png')
 
-
     world = World()
     con  = Connection('Bot2')
     con.connect('localhost')
     messages.KeepAlive().send(con.socket)
 
     message_pos = None
+    speed_y = 0
 
     clock = pygame.time.Clock()
 
@@ -89,10 +89,11 @@ if __name__ == '__main__':
     old_time = time()
     while con.socket and not quit:
         new_time = time()
-        delta = (new_time - old_time) / 1000.
+        delta = (new_time - old_time)
         old_time = new_time
 
-        for message in con.get_messages():
+        msgs = con.get_messages()
+        for message in msgs:
             if type(message) == messages.ChatMessage:
                 print('[MSG] %s' % message.message)
 
@@ -116,7 +117,7 @@ if __name__ == '__main__':
 
 
             if type(message) == messages.PlayerPosLook:
-                print('[PlayerPosLook] %d, %d (%d), %d ; %f, %f'
+                print('[PlayerPosLook] %f, %f (%f), %f ; %f, %f'
                         % (message.x, message.y, message.stance, message.z,
                            message.yaw, message.pitch))
                 message_pos = message
@@ -124,6 +125,8 @@ if __name__ == '__main__':
 
             if type(message) == messages.UpdateHealth:
                 print('[Vie] %d / 20' % message.health)
+                if message.health <= 0:
+                    messages.Respawn(0).send(con.socket)
 
             if type(message) == messages.Disconnect:
                 print('[Kicked] %s' % message.reason)
@@ -143,8 +146,75 @@ if __name__ == '__main__':
         key_pressed = pygame.key.get_pressed()
         # TODO: Move accordingly
         if key_pressed[pygame.K_z]:
-            message_pos.z += cos(radians(message_pos.yaw)) * 4000 * delta
-            message_pos.x -= sin(radians(message_pos.yaw)) * 4000 * delta
+            #TODO: speed, not pos
+            message_pos.z += cos(radians(message_pos.yaw)) * 4 * delta
+            message_pos.x -= sin(radians(message_pos.yaw)) * 4 * delta
+        if key_pressed[pygame.K_s]:
+            #TODO: speed, not pos
+            message_pos.z -= cos(radians(message_pos.yaw)) * 3 * delta
+            message_pos.x += sin(radians(message_pos.yaw)) * 3 * delta
+        # TODO: jump, if on ground
+        if key_pressed[pygame.K_SPACE] and message_pos.on_ground:
+            speed_y = 8.
+
+        if message_pos:
+            message_pos.y += speed_y * delta
+            message_pos.stance += speed_y * delta
+
+        # TODO: check for collision
+        if message_pos:
+            # bounding box seems to be around .27 in all directions
+            north = set(world.get_block_coords(message_pos.x - .32, message_pos.y + dy, message_pos.z + dz)
+                        for dy, dz in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
+            south = set(world.get_block_coords(message_pos.x + .32, message_pos.y + dy, message_pos.z + dz)
+                        for dy, dz in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
+            east = set(world.get_block_coords(message_pos.x + dx, message_pos.y + dy, message_pos.z - .32)
+                        for dy, dx in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
+            west = set(world.get_block_coords(message_pos.x + dx, message_pos.y + dy, message_pos.z + .32)
+                        for dy, dx in [(0, -.32), (0, .32), (1, .32), (1, -.32)])
+            under = set(world.get_block_coords(message_pos.x + dx, message_pos.y - .1, message_pos.z + dz)
+                        for dx, dz in [(-.32, 0), (.32, 0), (0, 0), (0, -.32), (0, .32)])
+            over = set(world.get_block_coords(message_pos.x + dx, message_pos.stance, message_pos.z + dz)
+                        for dx, dz in [(-.32, 0), (.32, 0), (0, 0), (0, -.32), (0, .32)])
+            try:
+                north = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in north)
+                south = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in south)
+                east = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in east)
+                west = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in west)
+                under = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in under)
+                over = set(world.csectors[cx, cz].get_block(ox, oy, oz) for cx, cz, ox, oy, oz in over)
+            except KeyError:
+                pass # At least one block isn't available. Don't do collision test.
+            else:
+                # Bottom
+                # If on ground: set speed to 0!
+                if any(block.solid for block in under):
+                    message_pos.on_ground = True
+                    delta = int(message_pos.y - .1) + 1. - message_pos.y
+                    message_pos.y += delta
+                    message_pos.stance += delta
+                    speed_y = 0
+                else:
+                    message_pos.on_ground = False
+                    speed_y = max(speed_y - delta * 30, -12.)
+                # North
+                if message_pos.x - int(message_pos.x) < .32 and any(block.solid for block in north):
+                    message_pos.x = int(message_pos.x) + .32
+                # South
+                if ceil(message_pos.x) - message_pos.x < .32 and any(block.solid for block in south):
+                    message_pos.x = ceil(message_pos.x) - .32
+                # East
+                if message_pos.z - int(message_pos.z) < .32 and any(block.solid for block in east):
+                    message_pos.z = int(message_pos.z) + .32
+                # West
+                if ceil(message_pos.z) - message_pos.z < .32 and any(block.solid for block in west):
+                    message_pos.z = ceil(message_pos.z) - .32
+                # Top
+                if any(block.solid for block in over):
+                    delta = int(message_pos.y + 2) - 2 - message_pos.y
+                    message_pos.y += delta
+                    message_pos.stance += delta
+                    speed_y = min(speed_y, 0)
 
         if not message_pos:
             messages.KeepAlive().send(con.socket)
@@ -160,16 +230,16 @@ if __name__ == '__main__':
             glClearColor(0.0, 0.0, 1.0, 0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-            glVertexPointer(3, GL_FLOAT, 0, vertex)
-            glTexCoordPointer(2, GL_FLOAT, 0, texcoords)
-            glColorPointer(3, GL_FLOAT, 0, colors)
-
             #TODO: new pipeline
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             glRotated(message_pos.pitch, 1, 0, 0)
             glRotated(180 + message_pos.yaw, 0, 1, 0)
             glTranslated(-message_pos.x, -message_pos.stance, -message_pos.z)
+
+            glVertexPointer(3, GL_FLOAT, 0, vertex)
+            glTexCoordPointer(2, GL_FLOAT, 0, texcoords)
+            glColorPointer(3, GL_FLOAT, 0, colors)
 
 #Uncomment to check backface culling
 #            glPolygonMode(GL_FRONT, GL_POINT)
