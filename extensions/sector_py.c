@@ -170,19 +170,11 @@ static PyObject *Sector_get_block(Sector *self, PyObject *args)
 }
 
 
-static PyObject *Sector_count_faces(Sector *self)
-{
-    return PyInt_FromLong(sector_count_faces(self->sector));
-}
-
-
 static PyMethodDef Sector_methods[] = {
     {"set_chunk", (PyCFunction) Sector_set_chunk, METH_VARARGS,
      "Set data chunk (TODO)."},
     {"set_block", (PyCFunction) Sector_set_block, METH_VARARGS,
      "Set block type and metadata (TODO)."},
-    {"count_faces", (PyCFunction) Sector_count_faces, METH_NOARGS,
-     "Count number of faces."},
     {"add_neighbour", (PyCFunction) Sector_add_neighbour, METH_VARARGS,
      "Add a neighbour to the sector."},
     {"get_block", (PyCFunction) Sector_get_block, METH_VARARGS,

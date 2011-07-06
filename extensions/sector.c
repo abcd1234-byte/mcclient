@@ -17,11 +17,8 @@
 #include "blocktypes.h"
 
 
-short _faces_count[] = {0, 1, 1, 2, 1, 2, 2, 3};
-
-
 //TODO
-void octree_update_face_count(short idx, short delta, short size, Octree octree, short x, short y, short z)
+void octree_update_block_count(short idx, short delta, short size, Octree octree, short x, short y, short z)
 {
     short dx, dy, dz;
 
@@ -36,8 +33,8 @@ void octree_update_face_count(short idx, short delta, short size, Octree octree,
     dy = (y < size) ? 0 : 1;
     dz = (z < size) ? 0 : 1;
 
-    octree_update_face_count(OCTREE_GET_CHILD(idx, dx, dy, dz), delta, size, octree,
-                             x - dx * size, y - dy * size, z - dz * size);
+    octree_update_block_count(OCTREE_GET_CHILD(idx, dx, dy, dz), delta, size, octree,
+                              x - dx * size, y - dy * size, z - dz * size);
 }
 
 
@@ -203,11 +200,11 @@ static inline void sector_update_block_faces(struct Sector *sector, short x, sho
 {
     short old_count, new_count;
 
-    old_count = _faces_count[sector->blockfaces[x][z][y] >> 3] + _faces_count[sector->blockfaces[x][z][y] & 7];
+    old_count = sector->blockfaces[x][z][y] ? 1 : 0;
     _sector_compute_block_faces(sector, x, y, z);
-    new_count = _faces_count[sector->blockfaces[x][z][y] >> 3] + _faces_count[sector->blockfaces[x][z][y] & 7];
+    new_count = sector->blockfaces[x][z][y] ? 1 : 0;
 
-    octree_update_face_count(0, new_count - old_count, 16, sector->octrees[y / 16], x, y % 16, z);
+    octree_update_block_count(0, new_count - old_count, 16, sector->octrees[y / 16], x, y % 16, z);
 }
 
 
@@ -266,18 +263,10 @@ void sector_gen_faces(struct Sector *sector)
             for (unsigned short z=0; z < 16; z++)
             {
                 _sector_compute_block_faces(sector, x, y, z);
-                octree_update_face_count(0, _faces_count[sector->blockfaces[x][z][y] >> 3] + _faces_count[sector->blockfaces[x][z][y] & 7], 16, sector->octrees[y / 16], x, y % 16, z);
+                octree_update_block_count(0, sector->blockfaces[x][z][y] ? 1 : 0, 16, sector->octrees[y / 16], x, y % 16, z);
             }
         }
     }
-}
-
-unsigned int sector_count_faces(struct Sector *sector)
-{
-    unsigned int count = 0;
-    for (unsigned short i=0; i < 16; i++)
-        count += sector->octrees[i][0];
-    return count;
 }
 
 
@@ -318,5 +307,4 @@ int main(void)
     printf("%d\n", sector->octrees[0][idx]);
 
     truc = FACE_SOUTH | FACE_EAST | FACE_NORTH | FACE_TOP | FACE_BOTTOM;
-    printf("%d; %d + %d\n", truc, _faces_count[truc >> 3], _faces_count[truc & 7]);
 }

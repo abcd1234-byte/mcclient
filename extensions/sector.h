@@ -28,7 +28,7 @@
 #define     FACE_BOTTOM      0x10
 #define     FACE_EAST        0x20
 
-typedef unsigned short Octree[1 + 8 + 64 + 512];
+typedef unsigned char Octree[1 + 8 + 64 + 512]; // Count of "worthy" blocks
 
 struct Sector
 {
@@ -46,7 +46,6 @@ void sector_set_block(struct Sector *sector,
                       short x, short y, short z,
                       char blocktype, char blockdata);
 void sector_gen_faces(struct Sector *sector);
-unsigned int sector_count_faces(struct Sector *sector);
 void sector_set_chunk(struct Sector *sector,
                       short ox, short oy, short oz,
                       short size_x, short size_y, short size_z,
