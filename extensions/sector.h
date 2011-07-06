@@ -28,7 +28,7 @@
 #define     FACE_BOTTOM      0x10
 #define     FACE_EAST        0x20
 
-typedef unsigned char Octree[1 + 8 + 64 + 512]; // Count of "worthy" blocks
+typedef unsigned short Octree[1 + 8 + 64 + 512]; // Count of "worthy" blocks
 
 struct Sector
 {
