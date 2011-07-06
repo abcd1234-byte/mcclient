@@ -185,7 +185,7 @@ class Respawn(object):
         return cls(*struct.unpack('!b', reader.read(1)))
 
     def send(self, socket):
-        socket.write(struct.pack('!Ib', self.id, self.world))
+        socket.send(struct.pack('!Ib', self.id, self.world))
 
 
 @register
