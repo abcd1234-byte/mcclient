@@ -135,7 +135,6 @@ inline static void _render_face(struct vertexattrib *vertices,
     vertices[1] = faces[face][2];
     vertices[0] = faces[face][3];
 
-    // (Bottleneck #2 is OpenGL/PyOpenGL, VBO and interlaced buffers might help)
     // Color (lighting) calculation:
     y2 = y + ny;
     if (0 <= y2 && y <= 127 && get_block(sector, x + nx, z + nz, &light_sector, &x2, &z2))
@@ -235,8 +234,8 @@ inline static void world_renderer_render_block(struct WorldRenderer *world_rende
     struct Vec3D southwesttop = CORNER_G;
     struct Vec3D northeastbottom = CORNER_A;
 
-    abs_x = sector->cx * 16 + x;
-    abs_z = sector->cz * 16 + z;
+    abs_x = (sector->cx << 4) | x;
+    abs_z = (sector->cz << 4) | z;
 
     dir_x = abs_x - view_context->x;
     dir_y = y - view_context->y;
@@ -362,7 +361,8 @@ void world_renderer_render_octree(struct WorldRenderer *world_renderer,
 
             if (octree[child_idx] && _is_cube_visible(view_context, size,
                                                       &left_to_test2,
-                                                      sector->cx * 16 + x2, y2, sector->cz * 16 + z2))
+                                                      (sector->cx << 4) | x2, y2,
+                                                      (sector->cz << 4) | z2))
             {
                 if (left_to_test2 == 0) // Fully inside!
                     world_renderer_render_octree_notest(world_renderer, sector,

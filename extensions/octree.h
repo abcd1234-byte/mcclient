@@ -15,7 +15,7 @@
 #define __OCTREE_H__
 
 #define     OCTREE_GET_CHILD(idx, dx, dy, dz) \
-                ((idx) * 8 + 1 + 4 * (dx) + 2 * (dz) + (dy))
-#define     OCTREE_GET_PARENT(idx) (((idx) - 1) / 8)
+                (8 * (idx) + 4 * (dx) + 2 * (dz) + (dy) + 1)
+#define     OCTREE_GET_PARENT(idx) (((idx) - 1) >> 3)
 
 #endif

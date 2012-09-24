@@ -12,6 +12,7 @@
  */
 
 #include <Python.h>
+#include <GL/gl.h>
 
 #include "world_renderer.h"
 #include "world_renderer_py.h"
@@ -112,6 +113,8 @@ static PyObject *WorldRenderer_render(WorldRenderer *self, PyObject *args)
 
     self->world_renderer->nb_vertices += self->world_renderer->nb_alpha_vertices;
 
+    glBufferData(GL_ARRAY_BUFFER, self->world_renderer->nb_vertices * 32, self->world_renderer->vertices, GL_STATIC_DRAW);
+
     Py_DECREF(iterator);
     Py_DECREF(iterable);
 
@@ -130,13 +133,6 @@ static PyMethodDef WorldRenderer_methods[] = {
 };
 
 
-static PyObject *WorldRenderer_get_vertices(WorldRenderer *self, void *closure)
-{
-    return PyBytes_FromStringAndSize((const char *) self->world_renderer->vertices,
-                                      sizeof(struct vertexattrib) * self->world_renderer->nb_vertices);
-}
-
-
 static PyObject *WorldRenderer_get_nb_vertices(WorldRenderer *self, void *closure)
 {
     return PyInt_FromLong(self->world_renderer->nb_vertices);
@@ -146,10 +142,6 @@ static PyObject *WorldRenderer_get_nb_vertices(WorldRenderer *self, void *closur
 static PyGetSetDef WorldRenderer_getseters[] = {
     {"nb_vertices", 
      (getter)WorldRenderer_get_nb_vertices, NULL,
-     "Number of vertices to dispaly",
-     NULL},
-    {"vertices", 
-     (getter)WorldRenderer_get_vertices, NULL,
      "Number of vertices to dispaly",
      NULL},
     {NULL}  /* Sentinel */

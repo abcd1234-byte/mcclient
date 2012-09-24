@@ -184,8 +184,6 @@ if __name__ == '__main__':
             message_pos.send(con.socket)
 
             pos = message_pos.x, message_pos.stance, message_pos.z
-            nb_vertices, vertices = world.get_gl_faces(pos, 60, 800./600., 0.1, 100, message_pos.yaw, message_pos.pitch)
-#            print('Nb faces drawn: %d' % (nb_vertices // 4))
 
             glClearColor(0.0, 0.0, 1.0, 0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -197,7 +195,7 @@ if __name__ == '__main__':
             glRotated(180 + message_pos.yaw, 0, 1, 0)
             glTranslated(-message_pos.x, -message_pos.stance, -message_pos.z)
 
-            glBufferData(GL_ARRAY_BUFFER, 32 * nb_vertices, vertices, GL_STATIC_DRAW)
+            nb_vertices = world.get_gl_faces(pos, 60, 800./600., 0.1, 80, message_pos.yaw, message_pos.pitch)
 
             glVertexPointer(3, GL_FLOAT, 32, c_void_p(0))
             glTexCoordPointer(2, GL_FLOAT, 32, c_void_p(12))
@@ -206,9 +204,10 @@ if __name__ == '__main__':
 #Uncomment to check backface culling
 #            glPolygonMode(GL_FRONT, GL_POINT)
             glDrawArrays(GL_QUADS, 0, nb_vertices)
+            glDrawArrays(GL_QUADS, 0, nb_vertices)
 
         pygame.display.flip()
-        clock.tick(50)
+        clock.tick(60)
 
     if quit:
         messages.Disconnect().send(con.socket)
