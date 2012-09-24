@@ -19,8 +19,7 @@ import OpenGL
 OpenGL.FORWARD_COMPATIBLE_ONLY = True
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from ctypes import byref
-from struct import pack
+from ctypes import c_void_p
 from math import cos, sin, radians, ceil
 
 
@@ -54,6 +53,11 @@ def loadImage(image):
 if __name__ == '__main__':
     pygame.init()
     pygame.display.set_mode((800, 600), pygame.OPENGL | pygame.DOUBLEBUF)
+
+    # VBO
+    vbo = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, vbo)
+
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
     glEnable(GL_DEPTH_TEST)
 #    glEnable(GL_ALPHA_TEST)
@@ -193,9 +197,11 @@ if __name__ == '__main__':
             glRotated(180 + message_pos.yaw, 0, 1, 0)
             glTranslated(-message_pos.x, -message_pos.stance, -message_pos.z)
 
-            glVertexPointer(3, GL_FLOAT, 32, vertices)
-            glTexCoordPointer(2, GL_FLOAT, 32, vertices[12:])
-            glColorPointer(3, GL_FLOAT, 32, vertices[20:])
+            glBufferData(GL_ARRAY_BUFFER, 32 * nb_vertices, vertices, GL_STATIC_DRAW)
+
+            glVertexPointer(3, GL_FLOAT, 32, c_void_p(0))
+            glTexCoordPointer(2, GL_FLOAT, 32, c_void_p(12))
+            glColorPointer(3, GL_FLOAT, 32, c_void_p(20))
 
 #Uncomment to check backface culling
 #            glPolygonMode(GL_FRONT, GL_POINT)
