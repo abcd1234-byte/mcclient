@@ -17,24 +17,13 @@
 #include "sector.h"
 #include "frustum.h"
 
-#define MAX_VERTICES        (4 * 65536)
+#define MAX_VERTICES        (8 * 65536)
 
 
-struct vertex {
-    float x;
-    float y;
-    float z;
-};
-
-struct color {
-    float r;
-    float g;
-    float b;
-};
-
-struct uv {
-    float u;
-    float v;
+struct vertexattrib {
+    float x, y, z;
+    float u, v;
+    float r, g, b;
 };
 
 struct ViewContext {
@@ -45,9 +34,7 @@ struct ViewContext {
 struct WorldRenderer {
     unsigned int nb_vertices;
     unsigned int nb_alpha_vertices;
-    struct vertex vertices[MAX_VERTICES * 2];
-    struct color colors[MAX_VERTICES * 2];
-    struct uv texcoords[MAX_VERTICES * 2];
+    struct vertexattrib vertices[MAX_VERTICES * 2];
 };
 
 

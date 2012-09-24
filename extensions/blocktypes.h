@@ -25,8 +25,7 @@
 
 typedef bool (*TextureFunc) (unsigned short x, unsigned short y, unsigned short z,
                              struct Sector *sector, unsigned char face,
-                             struct vertex *vertices,
-                             struct uv *texcoords, struct color *colors);
+                             struct vertexattrib *vertices);
 typedef bool (*DrawFunc) (struct WorldRenderer *world_renderer,
                           struct Sector *sector,
                           struct ViewContext *view_context,

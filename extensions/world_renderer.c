@@ -40,7 +40,8 @@ void world_renderer_reset_rendering(struct WorldRenderer *world_renderer)
 }
 
 inline static bool _is_cube_visible(struct ViewContext *view_context,
-                                    unsigned short size, unsigned char *left_to_test,
+                                    unsigned short size,
+                                    unsigned char *left_to_test,
                                     int x, int y, int z)
 {
     for (unsigned int i=0; i < 6; i++)
@@ -96,8 +97,8 @@ inline static bool _is_cube_visible(struct ViewContext *view_context,
 #define     CORNER_G        {1., 1., 1.}
 #define     CORNER_H        {1., 0., 1.}
 
-inline static void _render_face(struct vertex *vertices, struct color *colors,
-                                struct uv *texcoords, unsigned int *nb_vertices,
+inline static void _render_face(struct vertexattrib *vertices,
+                                unsigned int *nb_vertices,
                                 struct WorldRenderer *world_renderer,
                                 struct Sector *sector,
                                 unsigned short x, unsigned short y, unsigned short z,
@@ -115,7 +116,7 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
                                         .32768, .4096, .512, .64, .8, 1};
 
 
-    static const struct vertex faces[6][4] = {
+    static const struct vertexattrib faces[6][4] = {
         [BOTTOM] = {CORNER_A, CORNER_E, CORNER_H, CORNER_D},
         [TOP] = {CORNER_B, CORNER_C, CORNER_G, CORNER_F},
         [EAST] = {CORNER_A, CORNER_D, CORNER_C, CORNER_B},
@@ -129,6 +130,11 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     if ((*nb_vertices) == MAX_VERTICES)
         return;
 
+    vertices[3] = faces[face][0];
+    vertices[2] = faces[face][1];
+    vertices[1] = faces[face][2];
+    vertices[0] = faces[face][3];
+
     // (Bottleneck #2 is OpenGL/PyOpenGL, VBO and interlaced buffers might help)
     // Color (lighting) calculation:
     y2 = y + ny;
@@ -137,16 +143,11 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
         unsigned char llevel1 = light_sector->lighting[x2][z2][y2] & 0x0F;
         unsigned char llevel2 = (light_sector->lighting[x2][z2][y2] >> 4);
         float color_value = lightlevels[(llevel1 > llevel2) ? llevel1 : llevel2];
-        colors[0].r = colors[0].g = colors[0].b = color_value;
-        colors[1].r = colors[1].g = colors[1].b = color_value;
-        colors[2].r = colors[2].g = colors[2].b = color_value;
-        colors[3].r = colors[3].g = colors[3].b = color_value;
+        vertices[0].r = vertices[0].g = vertices[0].b = color_value;
+        vertices[1].r = vertices[1].g = vertices[1].b = color_value;
+        vertices[2].r = vertices[2].g = vertices[2].b = color_value;
+        vertices[3].r = vertices[3].g = vertices[3].b = color_value;
     }
-
-    vertices[3] = faces[face][0];
-    vertices[2] = faces[face][1];
-    vertices[1] = faces[face][2];
-    vertices[0] = faces[face][3];
 
     // Annoying texture calculation
     if (blocktypes[sector->blocktypes[x][z][y]].texfunc == NULL)
@@ -155,29 +156,28 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
         uv[1] = blocktypes[sector->blocktypes[x][z][y]].texcoords.v;
         orientation = 0;
 
-        texcoords[0].u = uv[0] / 16. + uvcorners[orientation][0];
-        texcoords[0].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        vertices[0].u = uv[0] / 16. + uvcorners[orientation][0];
+        vertices[0].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
         orientation += 1;
 
-        texcoords[1].u = uv[0] / 16. + uvcorners[orientation][0];
-        texcoords[1].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        vertices[1].u = uv[0] / 16. + uvcorners[orientation][0];
+        vertices[1].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
         orientation += 1;
 
-        texcoords[2].u = uv[0] / 16. + uvcorners[orientation][0];
-        texcoords[2].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        vertices[2].u = uv[0] / 16. + uvcorners[orientation][0];
+        vertices[2].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
 
         orientation += 1;
 
-        texcoords[3].u = uv[0] / 16. + uvcorners[orientation][0];
-        texcoords[3].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
+        vertices[3].u = uv[0] / 16. + uvcorners[orientation][0];
+        vertices[3].v = (15 - uv[1]) / 16. + uvcorners[orientation][1];
     }
     else
     {
         if (!blocktypes[sector->blocktypes[x][z][y]].texfunc(x, y, z, sector,
-                                                                  face, vertices,
-                                                                  texcoords, colors))
+                                                             face, vertices))
             return;
     }
 
@@ -198,25 +198,19 @@ inline static void world_renderer_render_face(struct WorldRenderer *world_render
                                  char nx, char ny, char nz,
                                  unsigned char face)
 {
-    struct vertex *vertices;
-    struct color *colors;
-    struct uv *texcoords;
+    struct vertexattrib *vertices;
 
     if (blocktypes[sector->blocktypes[x][z][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
     {
         vertices = world_renderer->vertices + (MAX_VERTICES + world_renderer->nb_alpha_vertices);
-        colors = world_renderer->colors + (MAX_VERTICES + world_renderer->nb_alpha_vertices);
-        texcoords = world_renderer->texcoords + (MAX_VERTICES + world_renderer->nb_alpha_vertices);
-        _render_face(vertices, colors, texcoords, &world_renderer->nb_alpha_vertices,
+        _render_face(vertices, &world_renderer->nb_alpha_vertices,
                      world_renderer, sector, x, y, z, abs_x, abs_y, abs_z,
                      nx, ny, nz, face);
     }
     else
     {
         vertices = world_renderer->vertices + world_renderer->nb_vertices;
-        colors = world_renderer->colors + world_renderer->nb_vertices;
-        texcoords = world_renderer->texcoords + world_renderer->nb_vertices;
-        _render_face(vertices, colors, texcoords, &world_renderer->nb_vertices,
+        _render_face(vertices, &world_renderer->nb_vertices,
                      world_renderer, sector, x, y, z, abs_x, abs_y, abs_z,
                      nx, ny, nz, face);
     }
@@ -414,11 +408,7 @@ int sort_item_comparison(const void *a, const void *b)
     item1 = (struct SortItem *) a;
     item2 = (struct SortItem *) b;
 
-    if (item1->distance2 > item2->distance2)
-        return -1;
-    else if (item1->distance2 < item2->distance2)
-        return 1;
-    return 0;
+    return item2->distance2 - item1->distance2;
 }
 
 
@@ -434,7 +424,7 @@ void sort_alpha_faces(struct WorldRenderer *world_renderer,
         float distance2_min = -1;
         for (unsigned int j=0; j < 4; j++)
         {
-            struct vertex vertex;
+            struct vertexattrib vertex;
             float dx, dy, dz;
             float distance2;
             vertex = world_renderer->vertices[MAX_VERTICES + (i * 4 + j)];
@@ -454,28 +444,18 @@ void sort_alpha_faces(struct WorldRenderer *world_renderer,
           sort_item_comparison);
 
     // 3. Reconstruct array
-    struct vertex *vertices = malloc(sizeof(struct vertex) * world_renderer->nb_alpha_vertices);
-    struct color *colors = malloc(sizeof(struct color) * world_renderer->nb_alpha_vertices);
-    struct uv *texcoords = malloc(sizeof(struct uv) * world_renderer->nb_alpha_vertices);
+    struct vertexattrib *vertices = malloc(sizeof(struct vertexattrib) * world_renderer->nb_alpha_vertices);
 
-    memcpy(vertices, world_renderer->vertices + MAX_VERTICES, sizeof(struct vertex) * world_renderer->nb_alpha_vertices);
-    memcpy(colors, world_renderer->colors + MAX_VERTICES, sizeof(struct color) * world_renderer->nb_alpha_vertices);
-    memcpy(texcoords, world_renderer->texcoords + MAX_VERTICES, sizeof(struct uv) * world_renderer->nb_alpha_vertices);
+    memcpy(vertices, world_renderer->vertices + MAX_VERTICES, sizeof(struct vertexattrib) * world_renderer->nb_alpha_vertices);
 
     for (unsigned int i=0; i < world_renderer->nb_alpha_vertices / 4; i++)
     {
         memcpy(world_renderer->vertices + MAX_VERTICES + i * 4,
-               vertices + items[i].index * 4, 4 * sizeof(struct vertex));
-        memcpy(world_renderer->colors + MAX_VERTICES + i * 4,
-               colors + items[i].index * 4, 4 * sizeof(struct color));
-        memcpy(world_renderer->texcoords + MAX_VERTICES + i * 4,
-               texcoords + items[i].index * 4, 4 * sizeof(struct uv));
+               vertices + items[i].index * 4, 4 * sizeof(struct vertexattrib));
     }
 
     // 4. Cleanup
     free(vertices);
-    free(colors);
-    free(texcoords);
     free(items);
 }
 

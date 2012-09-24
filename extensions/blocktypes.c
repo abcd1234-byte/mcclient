@@ -25,8 +25,7 @@ float uvcorners[8][2] = {{0, 1./16.}, {1./16., 1./16}, {1./16., 0}, {0, 0},
 
 bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
                    struct Sector *sector, unsigned char face,
-                   struct vertex *vertices,
-                   struct uv *texcoords, struct color *colors)
+                   struct vertexattrib *vertices)
 {
     float u, v;
     unsigned char type = sector->blocktypes[x][z][y];
@@ -36,47 +35,51 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
         u = blocktypes[3].texcoords.u;
         v = blocktypes[3].texcoords.v;
 
-        texcoords[0].u = u / 16. + uvcorners[0][0];
-        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+        vertices[0].u = u / 16. + uvcorners[0][0];
+        vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-        texcoords[1].u = u / 16. + uvcorners[1][0];
-        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+        vertices[1].u = u / 16. + uvcorners[1][0];
+        vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-        texcoords[2].u = u / 16. + uvcorners[2][0];
-        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+        vertices[2].u = u / 16. + uvcorners[2][0];
+        vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-        texcoords[3].u = u / 16. + uvcorners[3][0];
-        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+        vertices[3].u = u / 16. + uvcorners[3][0];
+        vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
     }
     else if (face == TOP)
     {
-        texcoords[0].u = uvcorners[0][0];
-        texcoords[0].v = 15 / 16. + uvcorners[0][1];
+        vertices[0].u = uvcorners[0][0];
+        vertices[0].v = 15 / 16. + uvcorners[0][1];
 
-        texcoords[1].u = uvcorners[1][0];
-        texcoords[1].v = 15 / 16. + uvcorners[1][1];
+        vertices[1].u = uvcorners[1][0];
+        vertices[1].v = 15 / 16. + uvcorners[1][1];
 
-        texcoords[2].u = uvcorners[2][0];
-        texcoords[2].v = 15 / 16. + uvcorners[2][1];
+        vertices[2].u = uvcorners[2][0];
+        vertices[2].v = 15 / 16. + uvcorners[2][1];
 
-        texcoords[3].u = uvcorners[3][0];
-        texcoords[3].v = 15 / 16. + uvcorners[3][1];
+        vertices[3].u = uvcorners[3][0];
+        vertices[3].v = 15 / 16. + uvcorners[3][1];
 
         if (type == 2)
         {
-            colors[3].r *= 0.6;
-            colors[0].r = colors[1].r = colors[2].r = colors[3].r;
-            colors[3].b *= 0.4;
-            colors[0].b = colors[1].b = colors[2].b = colors[3].b;
+            vertices[3].r *= 0.6;
+            vertices[0].r = vertices[1].r = vertices[2].r = vertices[3].r;
+            vertices[3].b *= 0.4;
+            vertices[0].b = vertices[1].b = vertices[2].b = vertices[3].b;
         }
         else
         {
             //TODO: do better
-            colors[0].r *= 2;
-            colors[0].g *= 2;
-            colors[0].b *= 2;
-            colors[3] = colors[2] = colors[1] = colors[0];
-
+            vertices[0].r *= 2;
+            vertices[0].g *= 2;
+            vertices[0].b *= 2;
+            for (unsigned int i=1; i < 4; i++)
+            {
+                vertices[i].r = vertices[0].r;
+                vertices[i].g = vertices[0].g;
+                vertices[i].b = vertices[0].b;
+            }
         }
     }
     else
@@ -84,17 +87,17 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
         u = blocktypes[type].texcoords.u;
         v = blocktypes[type].texcoords.v;
 
-        texcoords[0].u = u / 16. + uvcorners[0][0];
-        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+        vertices[0].u = u / 16. + uvcorners[0][0];
+        vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-        texcoords[1].u = u / 16. + uvcorners[1][0];
-        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+        vertices[1].u = u / 16. + uvcorners[1][0];
+        vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-        texcoords[2].u = u / 16. + uvcorners[2][0];
-        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+        vertices[2].u = u / 16. + uvcorners[2][0];
+        vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-        texcoords[3].u = u / 16. + uvcorners[3][0];
-        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+        vertices[3].u = u / 16. + uvcorners[3][0];
+        vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
     }
 
     return true;
@@ -102,8 +105,7 @@ bool grass_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
                   struct Sector *sector, unsigned char face,
-                  struct vertex *vertices,
-                  struct uv *texcoords, struct color *colors)
+                  struct vertexattrib *vertices)
 {
     float u, v;
     unsigned char type = sector->blocktypes[x][z][y];
@@ -113,17 +115,17 @@ bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
         u = blocktypes[type].texcoords.u + 1;
         v = blocktypes[type].texcoords.v;
 
-        texcoords[0].u = u / 16. + uvcorners[0][0];
-        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+        vertices[0].u = u / 16. + uvcorners[0][0];
+        vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-        texcoords[1].u = u / 16. + uvcorners[1][0];
-        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+        vertices[1].u = u / 16. + uvcorners[1][0];
+        vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-        texcoords[2].u = u / 16. + uvcorners[2][0];
-        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+        vertices[2].u = u / 16. + uvcorners[2][0];
+        vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-        texcoords[3].u = u / 16. + uvcorners[3][0];
-        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+        vertices[3].u = u / 16. + uvcorners[3][0];
+        vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
     }
     else
     {
@@ -142,17 +144,17 @@ bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
                 v = blocktypes[type].texcoords.v;
         }
 
-        texcoords[0].u = u / 16. + uvcorners[0][0];
-        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+        vertices[0].u = u / 16. + uvcorners[0][0];
+        vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-        texcoords[1].u = u / 16. + uvcorners[1][0];
-        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+        vertices[1].u = u / 16. + uvcorners[1][0];
+        vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-        texcoords[2].u = u / 16. + uvcorners[2][0];
-        texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+        vertices[2].u = u / 16. + uvcorners[2][0];
+        vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-        texcoords[3].u = u / 16. + uvcorners[3][0];
-        texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+        vertices[3].u = u / 16. + uvcorners[3][0];
+        vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
     }
 
     return true;
@@ -161,8 +163,7 @@ bool wood_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool leaves_texfunc(unsigned short x, unsigned short y, unsigned short z,
                     struct Sector *sector, unsigned char face,
-                    struct vertex *vertices,
-                    struct uv *texcoords, struct color *colors)
+                    struct vertexattrib *vertices)
 {
     float u, v;
     unsigned char type = sector->blocktypes[x][z][y];
@@ -182,22 +183,22 @@ bool leaves_texfunc(unsigned short x, unsigned short y, unsigned short z,
             v = blocktypes[type].texcoords.v;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[3].u = u / 16. + uvcorners[3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
-    colors[0].r = colors[0].b = 0;
-    colors[1].r = colors[1].b = 0;
-    colors[2].r = colors[2].b = 0;
-    colors[3].r = colors[3].b = 0;
+    vertices[0].r = vertices[0].b = 0;
+    vertices[1].r = vertices[1].b = 0;
+    vertices[2].r = vertices[2].b = 0;
+    vertices[3].r = vertices[3].b = 0;
 
     return true;
 }
@@ -205,8 +206,7 @@ bool leaves_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool dispenser_texfunc(unsigned short x, unsigned short y, unsigned short z,
                        struct Sector *sector, unsigned char face,
-                       struct vertex *vertices,
-                       struct uv *texcoords, struct color *colors)
+                       struct vertexattrib *vertices)
 {
     float u, v;
     unsigned char type = sector->blocktypes[x][z][y];
@@ -227,17 +227,17 @@ bool dispenser_texfunc(unsigned short x, unsigned short y, unsigned short z,
         v = 2;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[3].u = u / 16. + uvcorners[3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
     return true;
 }
@@ -245,8 +245,7 @@ bool dispenser_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool bed_texfunc(unsigned short x, unsigned short y, unsigned short z,
                  struct Sector *sector, unsigned char face,
-                 struct vertex *vertices,
-                 struct uv *texcoords, struct color *colors)
+                 struct vertexattrib *vertices)
 {
     float u, v;
     static const unsigned char orientation_to_face[] = {WEST, NORTH, EAST, SOUTH};
@@ -313,28 +312,28 @@ bool bed_texfunc(unsigned short x, unsigned short y, unsigned short z,
     }
 
     if (mirror)
-        texcoords[0].u = u / 16. + 1 / 16. - uvcorners[orientation][0];
+        vertices[0].u = u / 16. + 1 / 16. - uvcorners[orientation][0];
     else
-        texcoords[0].u = u / 16. + uvcorners[orientation][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[orientation][1];
+        vertices[0].u = u / 16. + uvcorners[orientation][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[orientation][1];
 
     if (mirror)
-        texcoords[1].u = u / 16. + 1 / 16. - uvcorners[orientation + 1][0];
+        vertices[1].u = u / 16. + 1 / 16. - uvcorners[orientation + 1][0];
     else
-        texcoords[1].u = u / 16. + uvcorners[orientation + 1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[orientation + 1][1];
+        vertices[1].u = u / 16. + uvcorners[orientation + 1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[orientation + 1][1];
 
     if (mirror)
-        texcoords[2].u = u / 16. + 1 / 16. - uvcorners[orientation + 2][0];
+        vertices[2].u = u / 16. + 1 / 16. - uvcorners[orientation + 2][0];
     else
-        texcoords[2].u = u / 16. + uvcorners[orientation + 2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[orientation + 2][1];
+        vertices[2].u = u / 16. + uvcorners[orientation + 2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[orientation + 2][1];
 
     if (mirror)
-        texcoords[3].u = u / 16. + 1 / 16. - uvcorners[orientation + 3][0];
+        vertices[3].u = u / 16. + 1 / 16. - uvcorners[orientation + 3][0];
     else
-        texcoords[3].u = u / 16. + uvcorners[orientation + 3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[orientation + 3][1];
+        vertices[3].u = u / 16. + uvcorners[orientation + 3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[orientation + 3][1];
 
     return true;
 }
@@ -342,8 +341,7 @@ bool bed_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool wool_texfunc(unsigned short x, unsigned short y, unsigned short z,
                   struct Sector *sector, unsigned char face,
-                  struct vertex *vertices,
-                  struct uv *texcoords, struct color *colors)
+                  struct vertexattrib *vertices)
 {
     float u, v;
     unsigned char data = sector->blockdata[x][z][y];
@@ -386,17 +384,17 @@ bool wool_texfunc(unsigned short x, unsigned short y, unsigned short z,
             u = 0; v = 4;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[3].u = u / 16. + uvcorners[3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
     return true;
 }
@@ -404,8 +402,7 @@ bool wool_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool bookshelf_texfunc(unsigned short x, unsigned short y, unsigned short z,
                        struct Sector *sector, unsigned char face,
-                       struct vertex *vertices,
-                       struct uv *texcoords, struct color *colors)
+                       struct vertexattrib *vertices)
 {
     float u, v;
 
@@ -421,17 +418,17 @@ bool bookshelf_texfunc(unsigned short x, unsigned short y, unsigned short z,
         v = blocktypes[47].texcoords.v;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[3].u = u / 16. + uvcorners[3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
     return true;
 }
@@ -439,8 +436,7 @@ bool bookshelf_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool crafting_table_texfunc(unsigned short x, unsigned short y, unsigned short z,
                             struct Sector *sector, unsigned char face,
-                            struct vertex *vertices,
-                            struct uv *texcoords, struct color *colors)
+                            struct vertexattrib *vertices)
 {
     float u, v;
     static const unsigned char foo[] = {[EAST] = 1, [WEST] = 1, [NORTH] = 0, [SOUTH] = 0};
@@ -461,17 +457,17 @@ bool crafting_table_texfunc(unsigned short x, unsigned short y, unsigned short z
         v = 3;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[3].u = u / 16. + uvcorners[3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
     return true;
 }
@@ -479,8 +475,7 @@ bool crafting_table_texfunc(unsigned short x, unsigned short y, unsigned short z
 
 bool seeds_texfunc(unsigned short x, unsigned short y, unsigned short z,
                    struct Sector *sector, unsigned char face,
-                   struct vertex *vertices,
-                   struct uv *texcoords, struct color *colors)
+                   struct vertexattrib *vertices)
 {
     //TODO: check
     float u, v;
@@ -495,17 +490,17 @@ bool seeds_texfunc(unsigned short x, unsigned short y, unsigned short z,
         v = 5;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[3].u = u / 16. + uvcorners[3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
     return true;
 }
@@ -513,8 +508,7 @@ bool seeds_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool pumpkin_texfunc(unsigned short x, unsigned short y, unsigned short z,
                      struct Sector *sector, unsigned char face,
-                     struct vertex *vertices,
-                     struct uv *texcoords, struct color *colors)
+                     struct vertexattrib *vertices)
 {
     //TODO: check
     float u, v;
@@ -537,17 +531,17 @@ bool pumpkin_texfunc(unsigned short x, unsigned short y, unsigned short z,
         v = 7;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
 
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
 
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
 
-    texcoords[3].u = u / 16. + uvcorners[3][0];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[3].u = u / 16. + uvcorners[3][0];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
     return true;
 }
@@ -555,8 +549,7 @@ bool pumpkin_texfunc(unsigned short x, unsigned short y, unsigned short z,
 
 bool slab_texfunc(unsigned short x, unsigned short y, unsigned short z,
                   struct Sector *sector, unsigned char face,
-                  struct vertex *vertices,
-                  struct uv *texcoords, struct color *colors)
+                  struct vertexattrib *vertices)
 {
     float u, v;
     switch (sector->blockdata[x][z][y])
@@ -591,18 +584,18 @@ bool slab_texfunc(unsigned short x, unsigned short y, unsigned short z,
             break;
     }
 
-    texcoords[0].u = u / 16. + uvcorners[0][0];
-    texcoords[1].u = u / 16. + uvcorners[1][0];
-    texcoords[2].u = u / 16. + uvcorners[2][0];
-    texcoords[3].u = u / 16. + uvcorners[3][0];
+    vertices[0].u = u / 16. + uvcorners[0][0];
+    vertices[1].u = u / 16. + uvcorners[1][0];
+    vertices[2].u = u / 16. + uvcorners[2][0];
+    vertices[3].u = u / 16. + uvcorners[3][0];
 
-    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
-    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+    vertices[2].v = (15 - v) / 16. + uvcorners[2][1];
+    vertices[3].v = (15 - v) / 16. + uvcorners[3][1];
 
     if (face == TOP || face == BOTTOM)
     {
-        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
-        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+        vertices[0].v = (15 - v) / 16. + uvcorners[0][1];
+        vertices[1].v = (15 - v) / 16. + uvcorners[1][1];
         if (face == TOP)
         {
             vertices[0].y -= .5;
@@ -613,8 +606,8 @@ bool slab_texfunc(unsigned short x, unsigned short y, unsigned short z,
     }
     else
     { //TODO: only half of the texture
-        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1] / 2.;
-        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1] / 2.;
+        vertices[0].v = (15 - v) / 16. + uvcorners[0][1] / 2.;
+        vertices[1].v = (15 - v) / 16. + uvcorners[1][1] / 2.;
         vertices[0].y -= .5;
         vertices[1].y -= .5;
     }

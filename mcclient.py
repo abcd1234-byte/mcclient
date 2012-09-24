@@ -19,7 +19,7 @@ import OpenGL
 OpenGL.FORWARD_COMPATIBLE_ONLY = True
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from ctypes import c_float
+from ctypes import byref
 from struct import pack
 from math import cos, sin, radians, ceil
 
@@ -69,8 +69,8 @@ if __name__ == '__main__':
     glLoadIdentity()
     gluPerspective(60, 800./600., 0.1, 128)
 
-    pygame.event.set_grab(True)
-    pygame.mouse.set_visible(False)
+#    pygame.event.set_grab(True)
+#    pygame.mouse.set_visible(False)
 
     truc = loadImage('mcdata/terrain.png')
 
@@ -180,7 +180,7 @@ if __name__ == '__main__':
             message_pos.send(con.socket)
 
             pos = message_pos.x, message_pos.stance, message_pos.z
-            nb_vertices, vertex, texcoords, colors = world.get_gl_faces(pos, 60, 800./600., 0.1, 80, message_pos.yaw, message_pos.pitch)
+            nb_vertices, vertices = world.get_gl_faces(pos, 60, 800./600., 0.1, 100, message_pos.yaw, message_pos.pitch)
 #            print('Nb faces drawn: %d' % (nb_vertices // 4))
 
             glClearColor(0.0, 0.0, 1.0, 0)
@@ -193,9 +193,9 @@ if __name__ == '__main__':
             glRotated(180 + message_pos.yaw, 0, 1, 0)
             glTranslated(-message_pos.x, -message_pos.stance, -message_pos.z)
 
-            glVertexPointer(3, GL_FLOAT, 0, vertex)
-            glTexCoordPointer(2, GL_FLOAT, 0, texcoords)
-            glColorPointer(3, GL_FLOAT, 0, colors)
+            glVertexPointer(3, GL_FLOAT, 32, vertices)
+            glTexCoordPointer(2, GL_FLOAT, 32, vertices[12:])
+            glColorPointer(3, GL_FLOAT, 32, vertices[20:])
 
 #Uncomment to check backface culling
 #            glPolygonMode(GL_FRONT, GL_POINT)

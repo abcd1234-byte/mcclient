@@ -108,13 +108,7 @@ static PyObject *WorldRenderer_render(WorldRenderer *self, PyObject *args)
 
     memcpy(self->world_renderer->vertices + self->world_renderer->nb_vertices,
            self->world_renderer->vertices + MAX_VERTICES,
-           sizeof(struct vertex) * self->world_renderer->nb_alpha_vertices);
-    memcpy(self->world_renderer->colors + self->world_renderer->nb_vertices,
-           self->world_renderer->colors + MAX_VERTICES,
-           sizeof(struct color) * self->world_renderer->nb_alpha_vertices);
-    memcpy(self->world_renderer->texcoords + self->world_renderer->nb_vertices,
-           self->world_renderer->texcoords + MAX_VERTICES,
-           sizeof(struct uv) * self->world_renderer->nb_alpha_vertices);
+           sizeof(struct vertexattrib) * self->world_renderer->nb_alpha_vertices);
 
     self->world_renderer->nb_vertices += self->world_renderer->nb_alpha_vertices;
 
@@ -139,21 +133,7 @@ static PyMethodDef WorldRenderer_methods[] = {
 static PyObject *WorldRenderer_get_vertices(WorldRenderer *self, void *closure)
 {
     return PyBytes_FromStringAndSize((const char *) self->world_renderer->vertices,
-                                      sizeof(struct vertex) * self->world_renderer->nb_vertices);
-}
-
-
-static PyObject *WorldRenderer_get_colors(WorldRenderer *self, void *closure)
-{
-    return PyBytes_FromStringAndSize((const char *) self->world_renderer->colors,
-                                      sizeof(struct color) * self->world_renderer->nb_vertices);
-}
-
-
-static PyObject *WorldRenderer_get_texcoords(WorldRenderer *self, void *closure)
-{
-    return PyBytes_FromStringAndSize((const char *) self->world_renderer->texcoords,
-                                      sizeof(struct uv) * self->world_renderer->nb_vertices);
+                                      sizeof(struct vertexattrib) * self->world_renderer->nb_vertices);
 }
 
 
@@ -170,14 +150,6 @@ static PyGetSetDef WorldRenderer_getseters[] = {
      NULL},
     {"vertices", 
      (getter)WorldRenderer_get_vertices, NULL,
-     "Number of vertices to dispaly",
-     NULL},
-    {"colors", 
-     (getter)WorldRenderer_get_colors, NULL,
-     "Number of vertices to dispaly",
-     NULL},
-    {"texcoords", 
-     (getter)WorldRenderer_get_texcoords, NULL,
      "Number of vertices to dispaly",
      NULL},
     {NULL}  /* Sentinel */

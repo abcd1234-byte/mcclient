@@ -278,33 +278,3 @@ inline void get_sector_coords(int *x, int *y, int *z, int *cx, int *cz)
     *z = (*z) & 15;
 }
 
-
-int main(void)
-{
-    struct Sector *sector = sector_new(0, 0);
-    unsigned int idx;
-    unsigned char truc = 0;
-
-    for(unsigned short x=0; x < 16; x++)
-        for (unsigned short y=0; y < 128; y++)
-            for (unsigned short z=0; z < 16; z++)
-                sector->blocktypes[x][z][y] = rand() % 2;
-
-    for (int i=0; i < 420; i++)
-    {
-        sector_gen_faces(sector);
-    }
-
-    for (int i=0; i < 42000; i++)
-        sector_set_block(sector, rand() % 16, rand() % 128, rand() % 16, rand() % 2, 0);
-
-
-    idx = 0;
-    printf("%d\n", sector->octrees[0][idx]);
-    idx = OCTREE_GET_CHILD(idx, 0, 0, 0);
-    printf("%d\n", sector->octrees[0][idx]);
-    idx = OCTREE_GET_CHILD(idx, 0, 0, 0);
-    printf("%d\n", sector->octrees[0][idx]);
-
-    truc = FACE_SOUTH | FACE_EAST | FACE_NORTH | FACE_TOP | FACE_BOTTOM;
-}

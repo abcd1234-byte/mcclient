@@ -171,5 +171,5 @@ class World(object):
         self.renderer.render(pos, fov, ratio, znear, zfar, yaw, pitch)
         newtime = time()
 #        print('Time ellapsed: %f' % (newtime - oldtime))
-        return renderer.nb_vertices, renderer.vertices, renderer.texcoords, renderer.colors
+        return renderer.nb_vertices, renderer.vertices
 
