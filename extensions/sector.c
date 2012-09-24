@@ -180,17 +180,17 @@ static inline void _sector_compute_block_faces(struct Sector *sector, short x, s
         }
         else
         {
-            if (x == 15 || sector->blocktypes[x + 1][z][y] == 0 || blocktypes[sector->blocktypes[x + 1][z][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
+            if (!get_block(sector, x + 1, z, &bsector, &bx, &bz) || blocktypes[bsector->blocktypes[bx][bz][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
                 sector->blockfaces[x][z][y] |= FACE_SOUTH;
-            if (y == 128 || sector->blocktypes[x][z][y + 1] == 0 || blocktypes[sector->blocktypes[x][z][y + 1]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
+            if (y == 128 || blocktypes[sector->blocktypes[x][z][y + 1]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
                 sector->blockfaces[x][z][y] |= FACE_TOP;
-            if (z == 15 || sector->blocktypes[x][z + 1][y] == 0 || blocktypes[sector->blocktypes[x][z + 1][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
+            if (!get_block(sector, x, z + 1, &bsector, &bx, &bz) || blocktypes[bsector->blocktypes[bx][bz][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
                 sector->blockfaces[x][z][y] |= FACE_WEST;
-            if (x == 0 || sector->blocktypes[x - 1][z][y] == 0 || blocktypes[sector->blocktypes[x - 1][z][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
+            if (!get_block(sector, x - 1, z, &bsector, &bx, &bz) || blocktypes[bsector->blocktypes[bx][bz][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
                 sector->blockfaces[x][z][y] |= FACE_NORTH;
-            if (y == 0 || sector->blocktypes[x][z][y - 1] == 0 || blocktypes[sector->blocktypes[x][z][y - 1]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
+            if (y == 0 || blocktypes[sector->blocktypes[x][z][y - 1]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
                 sector->blockfaces[x][z][y] |= FACE_BOTTOM;
-            if (z == 0 || sector->blocktypes[x][z - 1][y] == 0 || blocktypes[sector->blocktypes[x][z - 1][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
+            if (!get_block(sector, x, z - 1, &bsector, &bx, &bz) || blocktypes[bsector->blocktypes[bx][bz][y]].flags & BLOCKTYPE_FLAG_TRANSPARENT)
                 sector->blockfaces[x][z][y] |= FACE_EAST;
         }
     }
