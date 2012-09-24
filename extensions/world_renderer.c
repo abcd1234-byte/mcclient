@@ -149,7 +149,7 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     vertices[0] = faces[face][3];
 
     // Annoying texture calculation
-    if (blocktypes[sector->blocktypes[x][z][y]].func.texfunc == NULL)
+    if (blocktypes[sector->blocktypes[x][z][y]].texfunc == NULL)
     {
         uv[0] = blocktypes[sector->blocktypes[x][z][y]].texcoords.u;
         uv[1] = blocktypes[sector->blocktypes[x][z][y]].texcoords.v;
@@ -175,7 +175,7 @@ inline static void _render_face(struct vertex *vertices, struct color *colors,
     }
     else
     {
-        if (!blocktypes[sector->blocktypes[x][z][y]].func.texfunc(x, y, z, sector,
+        if (!blocktypes[sector->blocktypes[x][z][y]].texfunc(x, y, z, sector,
                                                                   face, vertices,
                                                                   texcoords, colors))
             return;
@@ -232,9 +232,9 @@ inline static void world_renderer_render_block(struct WorldRenderer *world_rende
     unsigned char faces = sector->blockfaces[x][z][y];
     struct BlockType type = blocktypes[sector->blocktypes[x][z][y]];
 
-    if (type.flags & BLOCKTYPE_FLAG_NONBLOCK && type.func.drawfunc != NULL)
+    if (type.flags & BLOCKTYPE_FLAG_NONBLOCK && type.drawfunc != NULL)
     {
-        type.func.drawfunc(world_renderer, sector, view_context, x, y, z);
+        type.drawfunc(world_renderer, sector, view_context, x, y, z);
         return;
     }
 

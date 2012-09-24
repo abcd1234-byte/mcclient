@@ -553,6 +553,76 @@ bool pumpkin_texfunc(unsigned short x, unsigned short y, unsigned short z,
 }
 
 
+bool slab_texfunc(unsigned short x, unsigned short y, unsigned short z,
+                  struct Sector *sector, unsigned char face,
+                  struct vertex *vertices,
+                  struct uv *texcoords, struct color *colors)
+{
+    float u, v;
+    switch (sector->blockdata[x][z][y])
+    {
+        case 0x00:
+            // Stone slab
+            if (face == TOP || face == BOTTOM)
+                { u = 6; v = 0; }
+            else
+                { u = 5; v = 0; }
+            break;
+        case 0x01:
+            // Sandstone slab
+            if (face == TOP || face == BOTTOM)
+                { u = 0; v = 11; }
+            else
+                { u = 0; v = 12; }
+            break;
+        case 0x02:
+            // Wooden slab
+            if (face == TOP || face == BOTTOM)
+                { u = 4; v = 0; }
+            else
+                { u = 4; v = 0; }
+            break;
+        case 0x03:
+            // Cobblestone slab
+            if (face == TOP || face == BOTTOM)
+                { u = 0; v = 1; }
+            else
+                { u = 0; v = 1; }
+            break;
+    }
+
+    texcoords[0].u = u / 16. + uvcorners[0][0];
+    texcoords[1].u = u / 16. + uvcorners[1][0];
+    texcoords[2].u = u / 16. + uvcorners[2][0];
+    texcoords[3].u = u / 16. + uvcorners[3][0];
+
+    texcoords[2].v = (15 - v) / 16. + uvcorners[2][1];
+    texcoords[3].v = (15 - v) / 16. + uvcorners[3][1];
+
+    if (face == TOP || face == BOTTOM)
+    {
+        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1];
+        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1];
+        if (face == TOP)
+        {
+            vertices[0].y -= .5;
+            vertices[1].y -= .5;
+            vertices[2].y -= .5;
+            vertices[3].y -= .5;
+        }
+    }
+    else
+    { //TODO: only half of the texture
+        texcoords[0].v = (15 - v) / 16. + uvcorners[0][1] / 2.;
+        texcoords[1].v = (15 - v) / 16. + uvcorners[1][1] / 2.;
+        vertices[0].y -= .5;
+        vertices[1].y -= .5;
+    }
+
+    return true;
+}
+
+
 struct BlockType blocktypes[256] = {
     [0] = {.name = "air",
            .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_TRANSPARENT},
@@ -560,7 +630,7 @@ struct BlockType blocktypes[256] = {
            .texcoords = {1, 0}},
     [2] = {.name = "grass",
            .texcoords = {3, 0},
-           .func.texfunc = grass_texfunc},
+           .texfunc = grass_texfunc},
     [3] = {.name = "dirt",
            .texcoords = {2, 0}},
     [4] = {.name = "cobblestone",
@@ -570,20 +640,20 @@ struct BlockType blocktypes[256] = {
     [6] = {.name = "sapling",
            .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_TRANSPARENT,
            .texcoords = {15, 0},
-           .func.drawfunc = NULL}, //TODO
+           .drawfunc = NULL}, //TODO
     [7] = {.name = "bedrock",
            .texcoords = {1, 1}},
     [8] = {.name = "water",
            .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONBLOCK,
            .texcoords = {13, 12}, //TODO: check
-           .func.drawfunc = NULL}, //TODO
+           .drawfunc = NULL}, //TODO
     [9] = {.name = "stationary water",
            .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_TRANSPARENT,
            .texcoords = {13, 12}}, //TODO: check
     [10] = {.name = "lava",
             .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {13, 14}, //TODO: check
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [11] = {.name = "stationary lava",
             .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_TRANSPARENT,
            .texcoords = {13, 14}}, //TODO: check
@@ -599,11 +669,11 @@ struct BlockType blocktypes[256] = {
             .texcoords = {2, 2}},
     [17] = {.name = "wood",
             .texcoords = {4, 1},
-            .func.texfunc = wood_texfunc},
+            .texfunc = wood_texfunc},
     [18] = {.name = "leaves",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_ALLFACES,
             .texcoords = {4, 3},
-            .func.texfunc = leaves_texfunc},
+            .texfunc = leaves_texfunc},
     [20] = {.name = "glass",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {1, 3}},
@@ -614,61 +684,61 @@ struct BlockType blocktypes[256] = {
     [23] = {.name = "dispenser",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {14, 2},
-            .func.texfunc = dispenser_texfunc},
+            .texfunc = dispenser_texfunc},
     [24] = {.name = "sandstone",
             .texcoords = {0, 11}, //TODO
-            .func.texfunc = NULL}, //TODO
+            .texfunc = NULL}, //TODO
     [25] = {.name = "note block",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {10, 3}},
     [26] = {.name = "bed",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_USABLE,
             .texcoords = {6, 8},
-            .func.texfunc = bed_texfunc},
+            .texfunc = bed_texfunc},
     [27] = {.name = "powered rail",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {3, 11},
-            .func.drawfunc = NULL}, // TODO
+            .drawfunc = NULL}, // TODO
     [28] = {.name = "detector rail",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {3, 12},
-            .func.drawfunc = NULL}, // TODO
+            .drawfunc = NULL}, // TODO
     [35] = {.name = "wool",
             .texcoords = {0, 4}, //TODO
-            .func.texfunc = wool_texfunc}, //TODO: handle more colors
+            .texfunc = wool_texfunc}, //TODO: handle more colors
     [37] = {.name = "dandelion",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {13, 0},
-            .func.drawfunc = NULL}, //TODO: for orientation
+            .drawfunc = NULL}, //TODO: for orientation
     [38] = {.name = "rose",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {12, 0},
-            .func.drawfunc = NULL}, //TODO: for orientation
+            .drawfunc = NULL}, //TODO: for orientation
     [39] = {.name = "brown mushroom",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {13, 1},
-            .func.drawfunc = NULL}, //TODO: for orientation
+            .drawfunc = NULL}, //TODO: for orientation
     [40] = {.name = "red mushroom",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {12, 1},
-            .func.drawfunc = NULL}, //TODO: for orientation
+            .drawfunc = NULL}, //TODO: for orientation
     [41] = {.name = "gold block",
             .texcoords = {7, 1}},
     [42] = {.name = "iron block",
             .texcoords = {6, 1}},
     [43] = {.name = "double slabs",
-            .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONBLOCK,
+            .drawfunc = NULL}, //TODO
     [44] = {.name = "slabs",
-            .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .flags = BLOCKTYPE_FLAG_TRANSPARENT,
+            .texfunc = slab_texfunc}, //TODO
     [45] = {.name = "brick block",
             .texcoords = {7, 0}},
     [46] = {.name = "tnt",
-            .func.texfunc = NULL}, //TODO
+            .texfunc = NULL}, //TODO
     [47] = {.name = "bookshelf",
             .texcoords = {3, 2},
-            .func.texfunc = bookshelf_texfunc}, //TODO: check
+            .texfunc = bookshelf_texfunc}, //TODO: check
     [48] = {.name = "moss stone",
             .texcoords = {4, 2}},
     [49] = {.name = "obsidian",
@@ -676,23 +746,23 @@ struct BlockType blocktypes[256] = {
     [50] = {.name = "torch",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
             .texcoords = {0, 5},
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [51] = {.name = "fire",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [52] = {.name = "monster spawner",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {1, 4}}, //TODO
     [53] = {.name = "wooden stairs",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [54] = {.name = "chest",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {11, 1},
-            .func.texfunc = NULL}, //TODO
+            .texfunc = NULL}, //TODO
     [55] = {.name = "redstone wire",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [56] = {.name = "diamond ore",
             .texcoords = {2, 3}},
     [57] = {.name = "diamond block",
@@ -700,69 +770,70 @@ struct BlockType blocktypes[256] = {
     [58] = {.name = "crafting table",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {11, 2},
-            .func.texfunc = crafting_table_texfunc},
+            .texfunc = crafting_table_texfunc},
     [59] = {.name = "seeds",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {8, 5}, //TODO: use that in function
-            .func.texfunc = seeds_texfunc},
+            .texfunc = seeds_texfunc},
     [60] = {.name = "farmland",
             .texcoords = {6, 5}, //TODO
-            .func.texfunc = NULL}, //TODO
+            .texfunc = NULL}, //TODO
     [61] = {.name = "furnace",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {12, 2},
-            .func.texfunc = dispenser_texfunc},
+            .texfunc = dispenser_texfunc},
     [62] = {.name = "burning furnace",
             .flags = BLOCKTYPE_FLAG_USABLE,
             .texcoords = {13, 3},
-            .func.texfunc = dispenser_texfunc},
+            .texfunc = dispenser_texfunc},
     [63] = {.name = "sign post",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [64] = {.name = "wooden door",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {1, 5},
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [65] = {.name = "ladders",
             .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [66] = {.name = "rails",
             .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [67] = {.name = "cobblestone stairs",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [68] = {.name = "wall sign",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [69] = {.name = "lever",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [70] = {.name = "stone pressure plate",
-            .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
+            .texcoords = {1, 0},
+            .drawfunc = NULL}, //TODO
     [71] = {.name = "iron door",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [72] = {.name = "wooden pressure plate",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [73] = {.name = "redstone ore",
             .texcoords = {3, 3}},
     [74] = {.name = "glowing redstone ore",
             .texcoords = {3, 3}}, //TODO
     [75] = {.name = "redstone torch (off)",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [76] = {.name = "redstone torch (on)",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [77] = {.name = "stone button",
             .flags = BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [78] = {.name = "snow",
            .texcoords = {4, 4},
-           .func.texfunc = grass_texfunc},
+           .texfunc = grass_texfunc},
     [79] = {.name = "ice",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT,
            .texcoords = {3, 4}},
@@ -770,22 +841,22 @@ struct BlockType blocktypes[256] = {
             .texcoords = {2, 4}},
     [81] = {.name = "cactus",
             .texcoords = {5, 4}, //Warning: cactus are smaller than other blocks!
-            .func.texfunc = NULL}, //TODO: share with trees?
+            .texfunc = NULL}, //TODO: share with trees?
     [82] = {.name = "clay block",
             .texcoords = {8, 4}},
     [83] = {.name = "sugar cane",
             .flags = BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK | BLOCKTYPE_FLAG_TRANSPARENT,
             .texcoords = {9, 4},
-            .func.drawfunc = NULL}, //TODO: share with flowers/mushrooms? No.
+            .drawfunc = NULL}, //TODO: share with flowers/mushrooms? No.
     [84] = {.name = "jukebox",
             .texcoords = {11, 4},
-            .func.texfunc = NULL}, //TODO: share with bookshelf?
+            .texfunc = NULL}, //TODO: share with bookshelf?
     [85] = {.name = "fence",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [86] = {.name = "pumpkin",
             .texcoords = {7, 7},
-            .func.texfunc = pumpkin_texfunc},
+            .texfunc = pumpkin_texfunc},
     [87] = {.name = "netherrack",
             .texcoords = {7, 6}},
     [88] = {.name = "soul sand",
@@ -794,18 +865,18 @@ struct BlockType blocktypes[256] = {
             .texcoords = {9, 6}},
     [90] = {.name = "portal",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK,
-            .func.drawfunc = NULL}, //TODO
+            .drawfunc = NULL}, //TODO
     [91] = {.name = "jack-o-lantern",
             .texcoords = {8, 7},
-            .func.texfunc = pumpkin_texfunc},
+            .texfunc = pumpkin_texfunc},
     [92] = {.name = "cake block",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_USABLE,
-            .func.texfunc = NULL}, //TODO
+            .texfunc = NULL}, //TODO
     [93] = {.name = "redstone repeater (off)",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK, //TODO: check
-            .func.texfunc = NULL}, //TODO
+            .texfunc = NULL}, //TODO
     [94] = {.name = "redstone repeater (on)",
             .flags = BLOCKTYPE_FLAG_TRANSPARENT | BLOCKTYPE_FLAG_USABLE | BLOCKTYPE_FLAG_NONSOLID | BLOCKTYPE_FLAG_NONBLOCK, //TODO: check
-            .func.texfunc = NULL}, //TODO
+            .texfunc = NULL}, //TODO
     //... TODO...
 };

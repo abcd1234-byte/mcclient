@@ -39,10 +39,8 @@ struct BlockType {
         unsigned char u;
         unsigned char v;
     } texcoords;
-    union {
-        TextureFunc texfunc; //TODO: union for non-block blocks
-        DrawFunc    drawfunc;
-    } func;
+    TextureFunc texfunc;
+    DrawFunc    drawfunc;
 };
 
 extern struct BlockType blocktypes[256];
